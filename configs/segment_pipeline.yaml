@@ -1,0 +1,14 @@
+version: v0.1
+name: kits2019_segment
+
+segment_kits:
+  criterion: dice_bce
+  metric: dice
+  optimizer: adam
+  scheduler: reduce_plateu
+  verbose: False
+  fold: None
+  num_epochs: 200
+  save_path:
+    save_log_path: log_UnetRes3D_softmax
+    save_model_path: best_UnetRes3D_softmax
