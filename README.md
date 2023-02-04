@@ -1,6 +1,4 @@
-# chest-X-rays
-Chest X-ray Abnormalities Classification
+# KITS2019
+Kidney and Tumor Segmentation 2019
 
-
-papers:
-https://arxiv.org/abs/1904.03582
+KiTS19 Challenge Homepage: https://kits19.grand-challenge.org/
