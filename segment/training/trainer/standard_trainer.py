@@ -4,7 +4,7 @@ from typing import Iterable, List, Optional
 
 import torch
 import torch.nn as nn
-import torch.optim as optim
+from torch.cuda.amp import GradScaler, autocast
 
 from ...utils.file_utils import logging
 from ..callbacks.utils import plot_df, save_logs, save_model
@@ -51,6 +51,9 @@ class Trainer(BaseTrainer):
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
+        self.scaler = GradScaler()
+        self.gradient_accumulation = 1
+
         dates = (datetime.datetime.now()).strftime("%Y%m%d")
         remaining_name = f"fold_{fold}_{dates}"
         self.log_path = Path(f"{output_dir}", "logs", remaining_name + ".csv")
@@ -61,31 +64,33 @@ class Trainer(BaseTrainer):
     def train_mini_batch(self):
         self.model.train()
         imgs, targets = next(iter(self.dl_train))
-        for _ in range(self.num_train_epochs):
-            loss, _ = self._train_one_batch(imgs, targets)
+        for iter in range(self.num_train_epochs):
+            loss, _ = self._train_one_batch(iter, imgs, targets)
             print("loss:", loss.item())
-
-    def _loss_and_output(self, imgs, targets):
-        imgs = imgs.to(self.device)
-        targets = targets.to(self.device)
-        preds = self.model(imgs)
-        loss = self.loss(preds, targets)
-        return loss, preds
 
     def _measures_one_batch(self):
         dsc_batch = self.score.get_dsc_batch()
         dsc_organ, dsc_tumor = self.score.get_dsc_class()
         return dsc_batch, dsc_organ, dsc_tumor
 
-    def _train_one_batch(self, imgs, targets):
-        loss, preds = self._loss_and_output(imgs, targets)
-        self.opt.zero_grad()
-        loss.backward()
-        self.opt.step()
+    def _train_one_batch(self, iter, imgs, targets):
+        if torch.cuda.is_available():
+            with autocast:
+                loss, preds = self.loss_and_output(imgs, targets)
+                self.scaler.scale(loss).backward()
+                if (iter+1) % self.gradient_accumulation == 0: 
+                    self.scaler.step(self.opt)
+                    self.scaler.update()
+                    self.opt.zero_grad()
+        else:
+            loss, preds = self.loss_and_output(imgs, targets)
+            self.opt.zero_grad()
+            loss.backward()
+            self.opt.step()
         return loss, preds
 
     def _eval_one_batch(self, imgs, targets):
-        loss, preds = self._loss_and_output(imgs, targets)
+        loss, preds = self.loss_and_output(imgs, targets)
         return loss, preds
 
     def run(self, mode=["train", "valid"], callbacks=None):

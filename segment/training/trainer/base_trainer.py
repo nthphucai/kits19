@@ -1,10 +1,6 @@
-from abc import abstractmethod
-from collections import defaultdict
-from typing import List
-
 import torch
 import torch.nn as nn
-from torch.cuda.amp import GradScaler, autocast
+from abc import abstractmethod
 
 from ...utils.utils import get_progress
 
@@ -28,6 +24,13 @@ class BaseTrainer:
         self.scheduler = scheduler
         self.score = metric
 
+    def loss_and_output(self, imgs, targets):
+        imgs = imgs.to(self.device)
+        targets = targets.to(self.device)
+        preds = self.model(imgs)
+        loss = self.loss(preds, targets)
+        return loss, preds
+    
     def train_one_epoch(self, epoch: int, callbacks: list):
         total_loss = 0.0
         self.optimizer.zero_grad()
@@ -37,7 +40,7 @@ class BaseTrainer:
                 data = self._extract_loader(batch_data)
                 imgs, targets = data
                 [c.on_training_batch_begin(epoch, iter, data) for c in callbacks]
-                loss, preds = self._train_one_batch(imgs, targets)
+                loss, preds = self._train_one_batch(iter, imgs, targets)
                 pbar.update()
 
                 with torch.no_grad():
