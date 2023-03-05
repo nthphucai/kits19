@@ -12,3 +12,8 @@ urllib3==1.26.12
 wandb==0.13.4
 torchio
 git+https://github.com/shijianjian/EfficientNet-PyTorch-3D
+pillow
+nibabel
+imageio
+requests
+tqdm
