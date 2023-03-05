@@ -4,22 +4,13 @@ import nibabel as nib
 import numpy as np
 import pandas as pd
 
-"""create dataframe
-"""
-# data_path = '/content/drive/MyDrive/Seg3D/KiTS2019/data/'
-# df = pd.DataFrame({ 'case_id' : ['case_' + f'{i:05}' for i in range(20)],
-#                     'img_path': [f'{data_path}' + 'case_' + f'{i:05}' + '/imaging.nii.gz' for i in range(20)],
-#                     'seg_path': [f'{data_path}' + 'case_' + f'{i:05}' + '/segmentation.nii.gz' for i in range(20)]
-#                    })
 
-
-def df_image_mask_path(root):
-
+def df_image_mask_path(root_path):
     dataset = []
     remnants = []
     arr_foldername = []
 
-    for folder_name in os.listdir(root):
+    for folder_name in os.listdir(root_path):
         arr_foldername.append(folder_name)
 
     for folder_name in sorted(arr_foldername, key=lambda x: str(x.split("_")[-1])):
@@ -27,7 +18,7 @@ def df_image_mask_path(root):
         nimg = []
         nmask = []
         try:
-            for file_name in os.listdir(os.path.join(root, folder_name)):
+            for file_name in os.listdir(os.path.join(root_path, folder_name)):
                 found = False
                 if "segmentation" in file_name:
                     for name in nimg:
@@ -38,7 +29,7 @@ def df_image_mask_path(root):
                     if found:
                         mask = (
                             nib.load(
-                                os.path.join(root, folder_name, file_name)
+                                os.path.join(root_path, folder_name, file_name)
                             ).get_fdata()
                         ).sum()
                         containing_mask = 0
@@ -48,8 +39,8 @@ def df_image_mask_path(root):
                         dataset.append(
                             [
                                 folder_name,
-                                os.path.join(root, folder_name, name),
-                                os.path.join(root, folder_name, file_name),
+                                os.path.join(root_path, folder_name, name),
+                                os.path.join(root_path, folder_name, file_name),
                                 containing_mask,
                             ]
                         )
@@ -64,7 +55,9 @@ def df_image_mask_path(root):
 
                     if found:
                         mask = (
-                            nib.load(os.path.join(root, folder_name, name)).get_fdata()
+                            nib.load(
+                                os.path.join(root_path, folder_name, name)
+                            ).get_fdata()
                         ).sum()
                         containing_mask = 0
                         if mask > 0:
@@ -72,8 +65,8 @@ def df_image_mask_path(root):
                         dataset.append(
                             [
                                 folder_name,
-                                os.path.join(root, folder_name, file_name),
-                                os.path.join(root, folder_name, name),
+                                os.path.join(root_path, folder_name, file_name),
+                                os.path.join(root_path, folder_name, name),
                                 containing_mask,
                             ]
                         )

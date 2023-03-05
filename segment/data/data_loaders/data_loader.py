@@ -1,19 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
 
-import segment.utils.parameter as para
 from segment.data.augs import augs
 from segment.data.data_readers import Kits19Dataset
-
-# from repos.training.data.get_ds_1 import Kits19Dataset
-
-"""
-get repos: get data from repos
-"""
 
 
 class Repos(nn.Module):
@@ -40,12 +30,7 @@ class Repos(nn.Module):
         return train_ds, val_ds
 
 
-"""
-get loader: load data from repos
-"""
-
-
-def get_dloader(df, fold: int = 0, augs=augs, **kwargs):
+def get_dloader(df, fold: int = 0, augs=augs, verbose=False, **kwargs):
     ds = Repos(df, fold=fold, augs=augs)
     train_ds, val_ds = ds.get_repos()
     print("data train:", len(train_ds))
@@ -60,9 +45,11 @@ def get_dloader(df, fold: int = 0, augs=augs, **kwargs):
     print("img shape:", img.shape)
     print("seg shape:", seg.shape)
     print("seg value:", np.unique(seg))
-    # fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12,8))
-    # ax1.imshow(img[0, img.shape[1]//2])
-    # ax2.imshow(seg[0, seg.shape[1]//2])
-    # ax3.imshow(seg[1, seg.shape[1]//2])
+    if verbose:
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12, 8))
+        ax1.imshow(img[0, img.shape[1] // 2])
+        ax2.imshow(seg[0, seg.shape[1] // 2])
+        ax3.imshow(seg[1, seg.shape[1] // 2])
+        plt.show()
 
     return train_dl, val_dl
