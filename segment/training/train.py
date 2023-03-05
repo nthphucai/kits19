@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
+import torch
 import pandas as pd
 
-from segment.data.data_loaders import get_dloader
 from segment.models import model_maps
 from segment.models.segment import get_model
 from segment.training.trainer.config_trainer import ConfigTrainer
@@ -59,9 +59,7 @@ def main():
         act="softmax",
     )
     config = read_yaml_file("configs/segment_pipeline.yaml")["segment_kits"]
-    data = pd.read_csv(data_args.data_path, index_col=0)
-    data = get_dloader(df=data, fold=None)
-
+    data = torch.load(data_args.data_path)
     trainer = ConfigTrainer(data=data, model=model, config=config)
     trainer.train()
 
