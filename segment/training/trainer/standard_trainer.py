@@ -4,7 +4,6 @@ from typing import Iterable, List, Optional
 
 import torch
 import torch.nn as nn
-from torch.cuda.amp import GradScaler, autocast
 
 from ...utils.file_utils import logging
 from ..callbacks.utils import plot_df, save_logs, save_model
@@ -36,7 +35,6 @@ class Trainer(BaseTrainer):
 
         self.dl_train = train_data
         self.dl_val = val_data
-        self.model = model
         self.loss = loss
         self.opt = optimizer
         self.scheduler = scheduler
@@ -49,9 +47,7 @@ class Trainer(BaseTrainer):
         self.best_loss = float("inf")
         self.num_train_epochs = num_train_epochs
 
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-
-        self.scaler = GradScaler()
+        self.scaler = torch.cuda.amp.GradScaler()
         self.gradient_accumulation = 1
 
         dates = (datetime.datetime.now()).strftime("%Y%m%d")
@@ -75,7 +71,7 @@ class Trainer(BaseTrainer):
 
     def _train_one_batch(self, iter, imgs, targets):
         if torch.cuda.is_available():
-            with autocast:
+            with torch.cuda.amp.autocast():
                 loss, preds = self.loss_and_output(imgs, targets)
                 self.scaler.scale(loss).backward()
                 if (iter+1) % self.gradient_accumulation == 0: 

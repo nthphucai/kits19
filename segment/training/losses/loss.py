@@ -3,6 +3,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 class FocalLoss(nn.Module):
     def __init__(self, gamma=2, smooth=1e-6):
@@ -60,19 +61,13 @@ class FocalDiceLoss(nn.Module):
         ) / (self.weight + 1)
 
 
-""""
-Dice_BCE
-"""
-
-
 class Dice_BCE(nn.Module):
-    def __init__(
-        self, smooth=1e-8, label_smoothing=0.01, class_weight=None, device=None
-    ):
+    def __init__(self, smooth=1e-8, label_smoothing=0.01, class_weight=None):
         super().__init__()
         self.eps = smooth
         self.lsm = label_smoothing
         self.class_weight = class_weight
+
         if self.class_weight is not None:
             self.class_weight = torch.tensor(
                 class_weight, dtype=torch.float, device=device
@@ -105,11 +100,6 @@ class Dice_BCE(nn.Module):
         return (1 - dice).mean() + ce.mean()
 
 
-"""
-BCE
-"""
-
-
 class BCE(nn.Module):
     def __init__(self, label_smoothing=0.01):
         super().__init__()
@@ -134,7 +124,7 @@ class BCE(nn.Module):
 
 
 class WBCE(nn.Module):
-    def __init__(self, weights_path=None, smooth=None, device=None):
+    def __init__(self, weights_path=None, smooth=None):
         super().__init__()
 
         if weights_path is None:

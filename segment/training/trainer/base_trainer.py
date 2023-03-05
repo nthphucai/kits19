@@ -25,6 +25,10 @@ class BaseTrainer(ABC):
         self.scheduler = scheduler
         self.score = metric
 
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        self.model.to(self.device)
+
     def loss_and_output(self, imgs, targets):
         imgs = imgs.to(self.device)
         targets = targets.to(self.device)
