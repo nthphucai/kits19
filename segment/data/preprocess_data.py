@@ -10,10 +10,14 @@ import pandas as pd
 
 from segment.data import create_df
 from segment.utils.hf_argparser import HfArgumentParser
-from segment.utils.file_utils import load_json_file, read_yaml_file, write_json_file
 from segment.data.preprocess.standard_preprocess import Preprocess3D
 from segment.data.utils import split_data
-
+from segment.utils.file_utils import (
+    logger, 
+    load_json_file, 
+    read_yaml_file, 
+    write_json_file
+)
 
 @dataclass
 class DataTrainingArguments:
@@ -44,24 +48,24 @@ class DataTrainingArguments:
 
     split_kfold: Optional[int] = field(
         default=None,
-        metadata={"help": "whether to use kfold"},
+        metadata={"help": "Whether to use kfold"},
     )
 
 
 def main():
     parser = HfArgumentParser(DataTrainingArguments)
     data_args = parser.parse_args_into_dataclasses()[0]
-
+    
     if ".csv" in pathlib.Path(data_args.data_path).suffix:
         columns = ["case_id", "img_path", "seg_path"]
         data = pd.read_csv(data_args.data_path)[columns]
     else:
         data = create_df.df_image_mask_path(root_path=data_args.data_path)
-        save_path = os.path.join("data_args.data_path", "train_ds.csv")
+        save_path = os.path.join(data_args.data_path, "train_ds.csv")
         logger.info("csv file save at %s", save_path)
         data.to_csv(save_path)
 
-    data_dict = data.to_dict(orient="records")[:4]
+    data_dict = data.to_dict(orient="records")[:10]
     configs = read_yaml_file(data_args.config_path)["preprocess"]
 
     preprocess = Preprocess3D(

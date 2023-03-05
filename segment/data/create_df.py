@@ -4,6 +4,7 @@ import nibabel as nib
 import numpy as np
 import pandas as pd
 
+from segment.utils.utils import get_progress
 
 def df_image_mask_path(root_path):
     dataset = []
@@ -13,7 +14,7 @@ def df_image_mask_path(root_path):
     for folder_name in os.listdir(root_path):
         arr_foldername.append(folder_name)
 
-    for folder_name in sorted(arr_foldername, key=lambda x: str(x.split("_")[-1])):
+    for folder_name in get_progress(sorted(arr_foldername, key=lambda x: str(x.split("_")[-1])), desc="convert_to_df"):
         arr = []
         nimg = []
         nmask = []

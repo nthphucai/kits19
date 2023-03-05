@@ -1,3 +1,4 @@
+from .transforms import augs
 from .crop_and_pad import (crop_object, crop_pad, foreground_crop,
                            pad_if_needed, random_center_crop, random_crop_2D,
                            random_crop_3D)
@@ -10,4 +11,5 @@ aug_maps = {
     "random_crop_2D": random_crop_2D,
     "foreground_crop": foreground_crop,
     "random_center_crop": random_center_crop,
+    "transforms": augs
 }

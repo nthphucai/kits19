@@ -46,25 +46,14 @@ class BasePreprocess3D(ABC):
             cropped_vol = [item["vol"] for item in out]
             cropped_msk = [item["msk"] for item in out]
 
-            cropped_vol_path = [
-                os.path.join(self.vol_path, f"{id_}_imaging.nii.gz") for id_ in case_id
-            ]
-            cropped_seg_path = [
-                os.path.join(self.seg_path, f"{id_}_segmentation.nii.gz")
-                for id_ in case_id
-            ]
+            cropped_vol_path = [os.path.join(self.vol_path, f"{id_}_imaging.nii.gz") for id_ in case_id]
+            cropped_seg_path = [os.path.join(self.seg_path, f"{id_}_segmentation.nii.gz") for id_ in case_id]
 
-            [
-                np.save(vol_path, vol)
-                for vol_path, vol in zip(cropped_vol_path, cropped_vol)
-            ]
-            [
-                np.save(seg_path, msk)
-                for seg_path, msk in zip(cropped_seg_path, cropped_msk)
-            ]
+            [np.save(vol_path, vol) for vol_path, vol in zip(cropped_vol_path, cropped_vol)]
+            [np.save(seg_path, msk) for seg_path, msk in zip(cropped_seg_path, cropped_msk)]
 
             result = [
-                {"case_id": id_, "new_vol_path": vol_path, "new_seg_path": seg_path}
+                {"case_id": id_, "new_vol_path": vol_path + ".npy", "new_seg_path": seg_path + ".npy"}
                 for id_, vol_path, seg_path in zip(
                     case_id, cropped_vol_path, cropped_seg_path
                 )

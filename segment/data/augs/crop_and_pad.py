@@ -1,5 +1,5 @@
 import numpy as np
-
+from random import random
 
 def crop_pad(v, axes, crop_size=256):
     """
@@ -181,7 +181,6 @@ def random_crop_2D(img, label=None, crop_size=256):
 
 
 def foreground_crop(img, label):
-    from random import random
 
     target_indexs = np.where(label > 0)
     [img_d, img_h, img_w] = img.shape
