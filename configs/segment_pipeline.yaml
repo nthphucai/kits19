@@ -3,11 +3,10 @@ name: kits2019_segment
 
 segment_kits:
   criterion:
-    class_weight: /Users/HPhuc/Practice/8. Kits2019/kits19/class_weight.npy
+    class_weight: /content/drive/MyDrive/Seg3D/KiTS2019/kits19/output/class_weight.npy
     name: dice_bce
     smooth: 1.e-6
     label_smoothing: 0.01 
-    device: cpu
   metric: 
     name: dice
     binary: False
