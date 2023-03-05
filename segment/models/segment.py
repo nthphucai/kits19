@@ -1,12 +1,9 @@
 import torch
 import torch.nn as nn
 
-from segment.models.unet3D import (BasicUnet3D, DyUnetRes3D, UnetRes3D_v1,
-                                   UnetRes3D_v2)
 
-
-def model_segment(pretrained_path, freeze_feature, num_classes=3, act="sigmoid"):
-    backbone = UnetRes3D_v2(in_channels=1, num_classes=num_classes)
+def get_model(model, pretrained_path, freeze_feature, num_classes=2, act="sigmoid"):
+    backbone = model(in_channels=1, num_classes=num_classes)
 
     if freeze_feature:
         print("freeze_feature")
