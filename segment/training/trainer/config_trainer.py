@@ -1,9 +1,11 @@
 import json
+from typing import Optional, Union
 
 import numpy as np
 import torch
 import torch.nn as nn
 
+from ...models import model_maps
 from ...training.callbacks import callback_maps
 from ...training.losses import loss_maps
 from ...training.metrics import metric_maps
@@ -14,7 +16,14 @@ from ...utils import parameter as para
 
 
 class ConfigTrainer:
-    def __init__(self, data, model, config, save_config_path=None, verbose=1):
+    def __init__(
+        self,
+        data: Union[tuple, list],
+        model: Optional[nn.Module] = None,
+        config: dict = None,
+        save_config_path: str = None,
+        verbose: bool = False,
+    ):
         self.config = config
         self.save_config_path = save_config_path
 
@@ -23,7 +32,7 @@ class ConfigTrainer:
         opt_config = config["optimizer"]
         callbacks_configs = config.get("callbacks", [])
         scheduler_configs = config.get("schedulers", [])
-        # model_config = config.get("model", [])
+        model_config = config.get("model", []) if model is None else None
 
         print("creating train, valid loader") if verbose else None
         self.dl_train, self.dl_valid = self._get_repo(data)
@@ -32,7 +41,7 @@ class ConfigTrainer:
             print("valid: ", len(self.dl_valid)) if self.dl_valid is not None else None
 
         print("creating model") if verbose else None
-        self.model = model  # self._get_model(model, model_config)
+        self.model = self._get_model(model_config) if model is None else model
         if verbose:
             print("printing model to model.txt")
 
@@ -42,24 +51,13 @@ class ConfigTrainer:
             num = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
             print("parameters:", f"{num:,}")
 
-        class_weight = np.array([0.00673965, 0.27936378, 1.0])
-        # class_weight = np.array([0.27936378, 1.0])
-        class_weight = class_weight.reshape(1, para.num_classes, *[1] * 3)
-        self.loss = self._get_loss(
-            loss_config=loss_config,
-            smooth=1e-6,
-            label_smoothing=None,
-            class_weight=class_weight,
-            device="cpu",
-        )
+        self.loss = self._get_loss(loss_config=loss_config)
         print("loss: ", self.loss) if verbose else None
 
-        self.metrics = self._get_metrics(metrics_configs=metrics_configs, binary=False)
+        self.metrics = self._get_metrics(metrics_configs=metrics_configs)
         print("metrics: ", self.metrics) if verbose else None
 
-        self.optimizer = self._get_optimizer(
-            opt_config=opt_config, lr=para.learning_rate
-        )
+        self.optimizer = self._get_optimizer(opt_config=opt_config)
         print("optimizer: ", self.optimizer) if verbose else None
 
         self.callbacks = self._get_callbacks(callbacks_configs)
@@ -74,7 +72,10 @@ class ConfigTrainer:
 
         return train, valid
 
-    def _get_model(self, model, model_config):
+    def _get_model(self, model_config):
+        name = model_config["name"]
+        kwargs = self.get_kwargs(model_config, ["name"])
+        model = model_maps[name](**kwargs)
         if "checkpoint" in model_config:
             w = torch.load(model_config["checkpoint"], map_location="cpu")
             print(model.load_state_dict(w, strict=False))
@@ -86,16 +87,27 @@ class ConfigTrainer:
 
         return model
 
-    def _get_loss(self, loss_config, **kwargs):
-        loss = loss_maps[loss_config](**kwargs)
+    def _get_loss(self, loss_config):
+        name = loss_config["name"]
+        kwargs = self.get_kwargs(loss_config, ["name", "class_weight"])
+        class_weight = np.load(loss_config["class_weight"]).reshape(
+            1, para.num_classes, *[1] * 3
+        )
+        print("class_weight:", class_weight)
+        loss = loss_maps[name](class_weight=class_weight, **kwargs)
         return loss
 
-    def _get_metrics(self, metrics_configs, **kwargs):
-        metrics = metric_maps[metrics_configs](**kwargs)
+    def _get_metrics(self, metrics_configs):
+        name = metrics_configs["name"]
+        kwargs = self.get_kwargs(metrics_configs, ["name"])
+        metrics = metric_maps[name](**kwargs)
         return metrics
 
-    def _get_optimizer(self, opt_config, **kwargs):
-        opt = optimizer_maps[opt_config]
+    def _get_optimizer(self, opt_config):
+        name = opt_config["name"]
+        opt = optimizer_maps[name]
+        kwargs = self.get_kwargs(opt_config, ["name"])
+
         if "checkpoint" in opt_config:
             opt.load_state_dict(
                 torch.load(opt_config["checkpoint"], map_location="cpu")
@@ -111,9 +123,7 @@ class ConfigTrainer:
 
         for cb_config in callbacks_configs:
             name = cb_config["name"].lower()
-
             kwargs = self.get_kwargs(cb_config)
-
             if name in callback_maps:
                 cbs.append(callback_maps[name](**kwargs))
 
@@ -141,6 +151,12 @@ class ConfigTrainer:
                 json.dump(self.config, handle)
 
         return runner.run()
+
+    @staticmethod
+    def get_kwargs(configs, excludes=("name",)):
+        excludes = set(excludes)
+
+        return {k: configs[k] for k in configs if k not in excludes}
 
 
 def create(config, save_config_path=None, name=None, verbose=1):

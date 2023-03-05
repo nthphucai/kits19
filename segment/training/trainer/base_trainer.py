@@ -1,11 +1,12 @@
+from abc import ABC, abstractmethod
+
 import torch
 import torch.nn as nn
-from abc import abstractmethod
 
 from ...utils.utils import get_progress
 
 
-class BaseTrainer:
+class BaseTrainer(ABC):
     def __init__(
         self,
         model: nn.Module,
@@ -30,7 +31,7 @@ class BaseTrainer:
         preds = self.model(imgs)
         loss = self.loss(preds, targets)
         return loss, preds
-    
+
     def train_one_epoch(self, epoch: int, callbacks: list):
         total_loss = 0.0
         self.optimizer.zero_grad()

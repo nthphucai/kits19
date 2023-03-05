@@ -4,7 +4,8 @@ from typing import Optional
 import pandas as pd
 
 from segment.data.data_loaders import get_dloader
-from segment.models.segment import model_segment
+from segment.models import model_maps
+from segment.models.segment import get_model
 from segment.training.trainer.config_trainer import ConfigTrainer
 from segment.utils.file_utils import read_yaml_file
 from segment.utils.hf_argparser import HfArgumentParser
@@ -50,15 +51,15 @@ def main():
     parser = HfArgumentParser(
         (ModelArguments, DataTrainingArguments, TrainingArguments)
     )
-
-    model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-
-    data = pd.read_csv(data_args.data_path, index_col=0)[:1]
-    model = model_segment(
-        pretrained_path=model_args.model_path, freeze_feature=False, act="softmax"
+    model_args, data_args, _ = parser.parse_args_into_dataclasses()
+    model = get_model(
+        model=model_maps["UnetRes_v2"],
+        pretrained_path=model_args.model_path,
+        freeze_feature=False,
+        act="softmax",
     )
-
     config = read_yaml_file("configs/segment_pipeline.yaml")["segment_kits"]
+    data = pd.read_csv(data_args.data_path, index_col=0)
     data = get_dloader(df=data, fold=None)
 
     trainer = ConfigTrainer(data=data, model=model, config=config)
