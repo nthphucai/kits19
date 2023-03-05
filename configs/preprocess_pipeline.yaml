@@ -1,0 +1,13 @@
+version: v0.1
+name: preprocess
+
+preprocess:
+  lower_bound: -79
+  upper_bound: 304
+  expand_slice: 20
+  target_spacing: [3, 1.5, 1.5]
+  mean: 101
+  std: 76.9
+  vol_min: -122.0
+  vol_max: 470.0 
+  size: 48

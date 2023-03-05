@@ -2,10 +2,20 @@ version: v0.1
 name: kits2019_segment
 
 segment_kits:
-  criterion: dice_bce
-  metric: dice
-  optimizer: adam
-  scheduler: reduce_plateu
+  criterion:
+    class_weight: /Users/HPhuc/Practice/8. Kits2019/kits19/class_weight.npy
+    name: dice_bce
+    smooth: 1.e-6
+    label_smoothing: 0.01 
+    device: cpu
+  metric: 
+    name: dice
+    binary: False
+  optimizer: 
+    name: adam
+    lr: 1.e-4
+  scheduler: 
+    name: reduce_plateu
   verbose: False
   fold: None
   num_epochs: 200
