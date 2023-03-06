@@ -32,7 +32,7 @@ class BasePreprocess3D(ABC):
 
     def run(self) -> list:
         data_loader = load_batch(
-            dataset=self.data, batch_size=2, collate_fn=self._generate_batch
+            dataset=self.data, batch_size=4, collate_fn=self._generate_batch
         )
 
         temp_lst = []
@@ -59,7 +59,7 @@ class BasePreprocess3D(ABC):
                 )
             ]
             temp_lst.append(result)
-            del result, case_id, cropped_vol, cropped_msk
+            del out, result, case_id, cropped_vol, cropped_msk
 
         flat_out = list(chain(*temp_lst))
         return flat_out
