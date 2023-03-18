@@ -5,6 +5,7 @@ import torch.nn as nn
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
+
 class FocalLoss(nn.Module):
     def __init__(self, gamma=2, smooth=1e-6):
         super(FocalLoss, self).__init__()
@@ -34,7 +35,6 @@ class DiceLoss(nn.Module):
         self.smooth = smooth
 
     def forward(self, preds: torch.Tensor, trues: torch.Tensor) -> torch.Tensor:
-
         num = trues.size(0)
         preds = preds.view(num, -1)
         trues = trues.view(num, -1)
@@ -49,7 +49,6 @@ class DiceLoss(nn.Module):
 
 class FocalDiceLoss(nn.Module):
     def __init__(self, gamma=2, smooth: float = 1e-6, weight=0.1):
-
         super(FocalDiceLoss, self).__init__()
         self.focal_loss = FocalLoss(gamma=gamma)
         self.dice_loss = DiceLoss(smooth=smooth)
@@ -74,7 +73,6 @@ class Dice_BCE(nn.Module):
             )
 
     def forward(self, preds, trues):
-
         p = (preds * trues).sum(dim=[-1, -2, -3])
         s = (preds + trues).sum(dim=[-1, -2, -3])
         dice = (2 * p + 1) / (s + 1)
@@ -110,7 +108,6 @@ class BCE(nn.Module):
         ln1 = (preds + 1e-6).log()
 
         if self.lsm is not None:
-
             l1 = (1 - self.lsm) * trues * ln1 + (self.lsm / 2) * ln1
             l2 = (1 - self.lsm) * (1 - trues) * ln0 + (self.lsm / 2) * ln0
 
@@ -145,7 +142,6 @@ class WBCE(nn.Module):
         self.smooth = smooth
 
     def forward(self, preds, trues):
-
         ln0 = (1 - preds + 1e-7).log()
         ln1 = (preds + 1e-7).log()
 

@@ -1,5 +1,7 @@
-import numpy as np
 from random import random
+
+import numpy as np
+
 
 def crop_and_pad_if_needed(v, axes=(0,1,2), crop_size=(128,256,256)):
     """

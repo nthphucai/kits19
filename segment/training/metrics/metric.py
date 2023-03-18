@@ -10,7 +10,6 @@ def dice(
     threshold: float = 0.5,
     eps: float = 1e-9,
 ) -> np.ndarray:
-
     scores = []
     if binary:
         preds = (preds >= threshold).astype(np.float32)
@@ -43,7 +42,6 @@ class Dice_3D:
         self.dsc_scores = []
 
     def update_one_batch(self, preds: np.ndarray, trues: np.ndarray):
-
         if self.binary:
             final_preds = (preds >= self.threshold).astype(np.float32)
             final_trues = (trues >= self.threshold).astype(np.float32)
@@ -76,7 +74,6 @@ class Dice_3D:
         self.update_batch(final_preds, final_trues)
 
     def update_class(self, preds: np.ndarray, trues: np.ndarray):
-
         dsc_organ, dsc_tumor = self.dsc_class_one_batch(preds, trues)
 
         self.dsc_class_organ.append(dsc_organ)
@@ -108,19 +105,17 @@ class Dice_3D:
         return np.mean(scores["organ"]), np.mean(scores["tumor"])
 
     def update_batch(self, preds, trues):
-
         dice = self.dsc_one_batch(preds, trues)
 
         self.dsc_scores.append(dice)
 
-
     @staticmethod
     def dsc_one_batch(preds: np.ndarray, trues: np.ndarray, eps: float = 1e-9):
         """
-            Params:
-            preds: (batch, class, c, w, h)
-            trues: (batch, class, c, w, h)
-            Returns: Dice score for data batch.
+        Params:
+        preds: (batch, class, c, w, h)
+        trues: (batch, class, c, w, h)
+        Returns: Dice score for data batch.
         """
         scores = []
         for b in range(preds.shape[0]):
@@ -144,11 +139,9 @@ class Dice_3D:
         dsc_scores = np.mean(self.dsc_scores)
         return dsc_scores
 
-    def get_dsc_one_epoch(self)  -> np.ndarray:
+    def get_dsc_one_epoch(self) -> np.ndarray:
         dsc_class_organ = np.mean(self.dsc_class_organ)
         dsc_class_tumor = np.mean(self.dsc_class_tumor)
         dsc_total_scores = np.mean(self.dsc_scores)
         self.init_list()
         return dsc_total_scores, dsc_class_organ, dsc_class_tumor
-
- 

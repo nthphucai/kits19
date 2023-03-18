@@ -2,13 +2,14 @@ import os
 from dataclasses import dataclass, field
 from typing import Optional, Union
 
-import torch
 import pandas as pd
+import torch
 
-from segment.utils.hf_argparser import HfArgumentParser
-from segment.utils.file_utils import logger, load_json_file, read_yaml_file
-from segment.data.data_readers.data_reader import DatasetReader
 from segment.data.augs import aug_maps
+from segment.data.data_readers.data_reader import DatasetReader
+from segment.utils.file_utils import load_json_file, logger, read_yaml_file
+from segment.utils.hf_argparser import HfArgumentParser
+
 
 @dataclass
 class DataTrainingArguments:

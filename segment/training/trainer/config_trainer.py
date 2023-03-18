@@ -69,7 +69,7 @@ class ConfigTrainer:
             train, valid = loaders
         else:
             train = loaders
-            valid = None 
+            valid = None
 
         return train, valid
 

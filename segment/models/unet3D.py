@@ -46,12 +46,12 @@ class BasicUnet3D(nn.Module):
         return out
 
 
-
 class UnetRes3D_v1(nn.Module):
     """
     Residual Unet Modules
     Source: https://github.com/nikhilroxtomar/Deep-Residual-Unet/blob/master/Deep%20Residual%20UNet.ipynb
     """
+
     def __init__(self, in_channels, filters=[16, 32, 64, 128, 256], num_classes=3):
         super().__init__()
         self.norm = Normalization()
@@ -115,6 +115,7 @@ class UnetRes3D_v2(nn.Module):
     Residual Unet Modules
     Source: https://arxiv.org/pdf/1908.02182.pdf
     """
+
     def __init__(
         self, in_channels, filters=filters, layer_num=layer_num, num_classes=3
     ):

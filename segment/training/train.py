@@ -1,16 +1,17 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
-import torch
-import pandas as pd
 import numpy as np
+import pandas as pd
+import torch
 
+from segment.data.data_loaders.processor import DataProcessor
 from segment.models import model_maps
 from segment.models.segment import get_model
-from segment.data.data_loaders.processor import DataProcessor
 from segment.training.trainer.config_trainer import ConfigTrainer
 from segment.utils.file_utils import logger, read_yaml_file
 from segment.utils.hf_argparser import HfArgumentParser
+
 
 @dataclass
 class ModelArguments:
@@ -39,18 +40,17 @@ class ModelArguments:
     )
 
     num_classes: Optional[int] = field(
-      default=2,
-      metadata={"help": "The number classes to classify"},
+        default=2,
+        metadata={"help": "The number classes to classify"},
     )
 
     freeze_feature: Optional[bool] = field(
-      default=False,
-      metadata={"help": "Whether to freeze_feature"},
+        default=False,
+        metadata={"help": "Whether to freeze_feature"},
     )
 
     act_func: Optional[str] = field(
-      default="softmax",
-      metadata={"help": "activate function"}
+        default="softmax", metadata={"help": "activate function"}
     )
 
 
@@ -65,18 +65,19 @@ class DataTrainingArguments:
         metadata={"help": "Path to store class_weight"},
     )
 
+
 def runner(
-    data_path:str,
+    data_path: str,
     class_weight_path: str,
     config_dir: str,
     model_name_or_path: str,
     cache_dir: str,
-    freeze_feature: bool=False,
+    freeze_feature: bool = False,
     num_classes: int = 2,
-    act_func: str="sigmoid"
+    act_func: str = "sigmoid",
 ):
     config = read_yaml_file(config_dir)["segment_kits"]
-    class_weight = np.array([0.25, 0.75])  
+    class_weight = np.array([0.25, 0.75])
     class_weight = class_weight.reshape(1, num_classes, *[1] * 3)
     np.save(class_weight_path, class_weight)
     logger.info("class weight saved at %s", class_weight_path)
@@ -101,12 +102,13 @@ def runner(
     trainer = ConfigTrainer(data_loaders=dataloader, model=model, config=config)
     trainer.train()
 
+
 def main():
     parser = HfArgumentParser(
         (ModelArguments, DataTrainingArguments, TrainingArguments)
     )
     model_args, data_args = parser.parse_args_into_dataclasses()
-    
+
     runner(
         data_path=data_args.data_path,
         class_weight_path=data_args.class_weight_path,
@@ -115,8 +117,9 @@ def main():
         cache_dir=model_args.cache_dir,
         freeze_feature=model_args.freeze_feature,
         num_classes=model_args.num_classes,
-        act_func=model_args.act_func
+        act_func=model_args.act_func,
     )
+
 
 if __name__ == "__main__":
     main()

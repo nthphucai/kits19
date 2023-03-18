@@ -1,9 +1,5 @@
-from segment.models.unet3D import (
-    BasicUnet3D, 
-    DyUnetRes3D, 
-    UnetRes3D_v1,
-    UnetRes3D_v2
-)
+from segment.models.unet3D import (BasicUnet3D, DyUnetRes3D, UnetRes3D_v1,
+                                   UnetRes3D_v2)
 
 model_maps = {
     "BasicUnet": BasicUnet3D,

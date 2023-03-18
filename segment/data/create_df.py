@@ -6,6 +6,7 @@ import pandas as pd
 
 from segment.utils.utils import get_progress
 
+
 def df_image_mask_path(root_path):
     dataset = []
     remnants = []

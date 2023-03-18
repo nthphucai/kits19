@@ -1,5 +1,5 @@
-import os
 import glob
+import os
 from abc import ABC, abstractmethod
 from itertools import chain
 from typing import List

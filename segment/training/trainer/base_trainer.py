@@ -92,8 +92,7 @@ class BaseTrainer(ABC):
 
     def _update_one_batch(self, preds, targets):
         self.score.update_one_batch(
-            preds.detach().cpu().numpy(), 
-            targets.detach().cpu().numpy()
+            preds.detach().cpu().numpy(), targets.detach().cpu().numpy()
         )
 
     @abstractmethod

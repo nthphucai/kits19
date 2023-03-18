@@ -28,7 +28,6 @@ class Trainer(BaseTrainer):
         fp16: bool = False,
         fold: Optional[int] = None,
     ):
-
         super().__init__(
             model, train_data, val_data, loss, optimizer, scheduler, metric
         )
@@ -69,7 +68,7 @@ class Trainer(BaseTrainer):
             with torch.cuda.amp.autocast():
                 loss, preds = self.loss_and_output(imgs, targets)
                 self.scaler.scale(loss).backward()
-                if (iter+1) % self.gradient_accumulation == 0: 
+                if (iter + 1) % self.gradient_accumulation == 0:
                     self.scaler.step(self.opt)
                     self.scaler.update()
                     self.opt.zero_grad()
