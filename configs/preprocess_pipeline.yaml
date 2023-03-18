@@ -18,7 +18,7 @@ create_dataset:
   expand_slice_y: 15
   expand_slice_x: 15
   crop_type: random
-  use_bground: False
+  use_bground: True
   z_range: [35, 80]
   y_range: [100, 165]
   x_range: [55, 200]

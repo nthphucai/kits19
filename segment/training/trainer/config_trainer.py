@@ -52,9 +52,6 @@ class ConfigTrainer:
         print("creating train, valid loader") if verbose else None
         self.dl_train = train_dataloaders
         self.dl_valid = valid_dataloaders
-        if verbose:
-            print("train: ", len(self.dl_train))
-            print("valid: ", len(self.dl_valid)) if self.dl_valid is not None else None
 
         print("creating model") if verbose else None
         self.model = self._get_model(model_config) if model is None else model

@@ -65,15 +65,17 @@ def get_dataset(
     train_df = df.loc[df["fold"] != fold].reset_index(drop=True)
     valid_df = df.loc[df["fold"] == fold].reset_index(drop=True)
 
-    train_ds = DatasetReader(df=df, augs=aug_maps["transforms"], phase="train", **config)
-    valid_ds = DatasetReader(df=df, augs=aug_maps["transforms"], phase="valid", **config)
+    train_ds = DatasetReader(df=train_df, augs=aug_maps["transforms"], phase="train", **config)
+    valid_ds = DatasetReader(df=valid_df, augs=None, phase="valid", **config)
 
     train_file_path = os.path.join(out_path, train_file_name)
     torch.save(train_ds, os.path.join(train_file_path))
+    logger.info(f"The number of train dataset is {train_df.shape[0]}")
     logger.info(f"Saved train dataset at {train_file_path}")
 
     valid_file_path = os.path.join(out_path, valid_file_name)
     torch.save(valid_ds, os.path.join(out_path, valid_file_path))
+    logger.info(f"The number of valid dataset is {valid_df.shape[0]}")
     logger.info(f"Saved valid dataset at {valid_file_path}")
     return train_ds, valid_ds
 

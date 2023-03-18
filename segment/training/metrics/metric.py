@@ -42,30 +42,42 @@ class Dice_3D:
         self.dsc_scores = []
 
     def update_one_batch(self, preds: np.ndarray, trues: np.ndarray):
+        """
+        :param
+        :preds: b, c, d, h, w
+        :trues: b, c, d, h, w
+        """
         if self.binary:
             final_preds = (preds >= self.threshold).astype(np.float32)
             final_trues = (trues >= self.threshold).astype(np.float32)
 
         else:
-            preds = np.argmax(preds, axis=1)
+            preds_max = np.argmax(preds, axis=1)
+            preds_bground = preds_max.copy()
+            preds_bground[preds_max != 0] = 0
+            preds_bground[preds_max == 0] = 1
 
-            preds_organ = preds.copy()
-            preds_organ[preds_organ != 0] = 0
-            preds_organ[preds_organ == 0] = 1
+            preds_organ = preds_max.copy()
+            preds_organ[preds_max != 1] = 0
+            preds_organ[preds_max == 1] = 1
 
-            preds_tumor = preds.copy()
-            preds_tumor[preds_tumor != 1] = 0
-            preds_tumor[preds_tumor == 1] = 1
+            preds_tumor = preds_max.copy()
+            preds_tumor[preds_max != 2] = 0
+            preds_tumor[preds_max == 2] = 1
             final_preds = np.stack([preds_organ, preds_tumor], axis=1)
 
-            trues = np.argmax(trues, axis=1)
-            trues_organ = trues.copy()
-            trues_organ[trues_organ != 0] = 0
-            trues_organ[trues_organ == 0] = 1
+            trues_max = np.argmax(trues, axis=1)
+            trues_bground = trues_max.copy()
+            trues_bground[trues_max != 0] = 0
+            trues_bground[trues_max == 0] = 1
 
-            trues_tumor = trues.copy()
-            trues_tumor[trues_tumor != 1] = 0
-            trues_tumor[trues_tumor == 1] = 1
+            trues_organ = trues_max.copy()
+            trues_organ[trues_max != 1] = 0
+            trues_organ[trues_max == 1] = 1
+
+            trues_tumor = trues_max.copy()
+            trues_tumor[trues_max != 2] = 0
+            trues_tumor[trues_max == 2] = 1
             final_trues = np.stack([trues_organ, trues_tumor], axis=1)
 
             assert final_trues.shape == final_preds.shape
