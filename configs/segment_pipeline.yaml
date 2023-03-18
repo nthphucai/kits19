@@ -19,9 +19,13 @@ segment_kits:
     lr: 1.e-4
   scheduler: 
     name: reduce_plateu
+  callbacks: [{"name": "checkpoint", "file_path": "output/file_path.pt"}]
   verbose: False
   fold: None
-  num_epochs: 2
   save_path:
     save_log_path: log_UnetRes3D_softmax
     save_model_path: best_UnetRes3D_softmax
+  training_args:
+    num_train_epoch: 2
+    save_model: True
+    
