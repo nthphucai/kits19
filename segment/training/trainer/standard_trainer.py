@@ -27,7 +27,7 @@ class Trainer(BaseTrainer):
         output_dir: str,
         log_dir: str,
         fp16: bool = False,
-        fold: Optional[int] = None,
+        fold: Optional[int]=None,
     ):
         super().__init__(
             model, train_data, val_data, loss, optimizer, scheduler, metric
@@ -85,7 +85,7 @@ class Trainer(BaseTrainer):
         loss, preds = self.loss_and_output(imgs, targets)
         return loss, preds
 
-    def run(self, mode=["train", "valid"], callbacks=None):
+    def run(self, mode=("train", "valid"), callbacks=None):
         callbacks = callbacks or []
 
         [c.set_trainer(self) for c in callbacks]

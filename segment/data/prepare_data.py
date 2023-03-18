@@ -60,7 +60,7 @@ def get_dataset(
     config = read_yaml_file(config_path)["create_dataset"]
     print("config file:\n", config)
     
-    df = pd.DataFrame(data)[:10]
+    df = pd.DataFrame(data)
     logger.info(f"The number of data at {df.shape[0]}")
     train_df = df.loc[df["fold"] != fold].reset_index(drop=True)
     valid_df = df.loc[df["fold"] == fold].reset_index(drop=True)

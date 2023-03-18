@@ -4,7 +4,7 @@ from typing import Optional, Union
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader as load_batch
+from torch.utils.data import DataLoader
 
 from ...models import model_maps
 from ...training.callbacks import callback_maps
@@ -19,7 +19,8 @@ from ...utils import parameter as para
 class ConfigTrainer:
     def __init__(
         self,
-        data_loaders: Union[tuple, list],
+        train_dataloaders: DataLoader,
+        valid_dataloaders: Optional[DataLoader],
         model: Optional[nn.Module] = None,
         config: dict = None,
         save_config_path: str = None,
@@ -29,6 +30,8 @@ class ConfigTrainer:
         log_dir: str = None,
         fp16: bool = False,
         fold: Optional[int] = 1,
+        do_train: bool = True,
+        do_eval: bool = False, 
     ):
         self.config = config
         self.save_config_path = save_config_path
@@ -43,11 +46,12 @@ class ConfigTrainer:
         self.num_train_epochs = num_train_epochs
         self.output_dir = output_dir
         self.log_dir = log_dir
-        self.fp16 = (fp16,)
+        self.fp16 = fp16
         self.fold = fold
 
         print("creating train, valid loader") if verbose else None
-        self.dl_train, self.dl_valid = self._get_dataloader(data_loaders)
+        self.dl_train = train_dataloaders
+        self.dl_valid = valid_dataloaders
         if verbose:
             print("train: ", len(self.dl_train))
             print("valid: ", len(self.dl_valid)) if self.dl_valid is not None else None
@@ -75,9 +79,15 @@ class ConfigTrainer:
         self.scheduler = None
         print("optimizer: ", self.scheduler) if verbose else None
 
-        # self.callbacks = [callback_maps["early_stopping"]()] #self._get_callbacks(callbacks_configs)
         self.callbacks = self._get_callbacks(callbacks_configs)
         print("callbacks: ", self.callbacks) if verbose else None
+
+        if do_eval and do_train:
+          self.mode = ("train", "valid")
+        elif do_train:
+          self.mode = ("train", )
+        elif do_eval:
+            self.mode = ("valid", )
 
     def _get_dataloader(self, loaders):
         if isinstance(loaders, (tuple, list)):
@@ -165,7 +175,7 @@ class ConfigTrainer:
             with open(full_file, "w") as handle:
                 json.dump(self.config, handle)
 
-        return runner.run(mode=["train", "valid"], callbacks=self.callbacks)
+        return runner.run(mode=self.mode, callbacks=self.callbacks)
 
     @staticmethod
     def get_kwargs(configs, excludes=("name",)):

@@ -57,8 +57,12 @@ class ModelArguments:
 
 @dataclass
 class DataTrainingArguments:
-    data_path: Optional[str] = field(
-        default="data/train_ds.csv", metadata={"help": "Path to data"}
+    train_dataset_path: Optional[str] = field(
+        default="output/data/train_dataset.pt", metadata={"help": "Path to train dataset"}
+    )
+
+    valid_dataset_path: Optional[str] = field(
+        default="output/data/valid_dataset.pt", metadata={"help": "Path to valid dataset"}
     )
 
     class_weight_path: Optional[str] = field(
@@ -79,13 +83,24 @@ class TrainingArguments:
         metadata={"help": "Whether to save log"},
     )
 
+    do_train: Optional[bool] = field(
+        default=True,
+        metadata={"help": "Whether to train model"},
+    )
+
+    do_eval: Optional[bool] = field(
+        default=False,
+        metadata={"help": "Whether to eval model"},
+    )
+
 
 def runner(
-    data_path: str,
+    train_dataset_path: str,
+    valid_dataset_path: Optional[str],
     class_weight_path: str,
     config_dir: str,
     model_name_or_path: str,
-    cache_dir: str,
+    cache_dir: Optional[str],
     freeze_feature: bool = False,
     num_classes: int = 2,
     act_func: str = "sigmoid",
@@ -94,6 +109,8 @@ def runner(
     log_dir: str = None,
     fp16: bool = False,
     fold: Optional[int] = 1,
+    do_train: bool=True,
+    do_eval: bool=False
 ):
     config = read_yaml_file(config_dir)["segment_kits"]
     class_weight = np.array([0.25, 0.75])
@@ -109,9 +126,12 @@ def runner(
         act=act_func,
     )
 
-    dataset = torch.load(data_path)
-    processor = DataProcessor(dataset, batch_size=4, workers=2)
-    dataloader = processor.get_dloader()
+    train_dataset = torch.load(train_dataset_path)
+    valid_dataset = torch.load(valid_dataset_path) if valid_dataset_path is not None else None
+
+    processor = DataProcessor(batch_size=4, workers=2)
+    train_dataloaders = processor.get_dloader(train_dataset) 
+    valid_dataloaders = processor.get_dloader(valid_dataset) if valid_dataset_path is not None else None
 
     # train_minibatch = next(iter(dataloader))[0]
     # print("dataloader shape: ", train_minibatch.shape)
@@ -119,7 +139,8 @@ def runner(
     # print("predict shape:", output.shape)
 
     trainer = ConfigTrainer(
-        data_loaders=dataloader,
+        train_dataloaders=train_dataloaders,
+        valid_dataloaders=valid_dataloaders,
         model=model,
         config=config,
         save_config_path=None,
@@ -129,6 +150,8 @@ def runner(
         log_dir=log_dir,
         fp16=fp16,
         fold=fold,
+        do_train=do_train,
+        do_eval=do_eval
     )
     trainer.train()
 
@@ -143,7 +166,8 @@ def main():
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
     runner(
-        data_path=data_args.data_path,
+        train_dataset_path=data_args.train_dataset_path,
+        valid_dataset_path=data_args.valid_dataset_path,
         class_weight_path=data_args.class_weight_path,
         config_dir=model_args.config_dir,
         model_name_or_path=model_args.model_name_or_path,
@@ -154,7 +178,9 @@ def main():
         act_func=model_args.act_func,
         num_train_epochs=training_args.num_train_epochs,
         log_dir=training_args.log_dir,
-    )
+        do_train=training_args.do_train,
+        do_eval=training_args.do_eval    
+)
 
 
 if __name__ == "__main__":
