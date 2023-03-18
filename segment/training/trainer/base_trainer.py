@@ -1,5 +1,5 @@
-from typing import List
 from abc import ABC, abstractmethod
+from typing import List
 
 import torch
 import torch.nn as nn
@@ -45,7 +45,10 @@ class BaseTrainer(ABC):
             for step, batch_data in enumerate(self.dl_train):
                 data = self._extract_loader(batch_data)
                 imgs, targets = data
-                [c.on_training_batch_begin(epoch=epoch, step=step, data=data) for c in callbacks]
+                [
+                    c.on_training_batch_begin(epoch=epoch, step=step, data=data)
+                    for c in callbacks
+                ]
                 loss, preds = self._train_one_batch(step, imgs, targets)
                 pbar.update()
 

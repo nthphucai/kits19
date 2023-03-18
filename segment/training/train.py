@@ -66,6 +66,7 @@ class DataTrainingArguments:
         metadata={"help": "Path to store class_weight"},
     )
 
+
 @dataclass
 class TrainingArguments:
     num_train_epochs: Optional[int] = field(
@@ -78,20 +79,21 @@ class TrainingArguments:
         metadata={"help": "Whether to save log"},
     )
 
+
 def runner(
     data_path: str,
     class_weight_path: str,
     config_dir: str,
     model_name_or_path: str,
     cache_dir: str,
-    freeze_feature: bool=False,
-    num_classes: int=2,
-    act_func:str="sigmoid",
-    num_train_epochs: str=2,
-    output_dir:str=None,
-    log_dir:str=None,  
-    fp16:bool=False,
-    fold:Optional[int]=1
+    freeze_feature: bool = False,
+    num_classes: int = 2,
+    act_func: str = "sigmoid",
+    num_train_epochs: str = 2,
+    output_dir: str = None,
+    log_dir: str = None,
+    fp16: bool = False,
+    fold: Optional[int] = 1,
 ):
     config = read_yaml_file(config_dir)["segment_kits"]
     class_weight = np.array([0.25, 0.75])
@@ -117,16 +119,16 @@ def runner(
     # print("predict shape:", output.shape)
 
     trainer = ConfigTrainer(
-        data_loaders=dataloader, 
+        data_loaders=dataloader,
         model=model,
         config=config,
-        save_config_path=None, 
-        verbose=False, 
+        save_config_path=None,
+        verbose=False,
         num_train_epochs=num_train_epochs,
-        output_dir=output_dir, 
-        log_dir=log_dir, 
+        output_dir=output_dir,
+        log_dir=log_dir,
         fp16=fp16,
-        fold=fold
+        fold=fold,
     )
     trainer.train()
 
@@ -151,7 +153,7 @@ def main():
         num_classes=model_args.num_classes,
         act_func=model_args.act_func,
         num_train_epochs=training_args.num_train_epochs,
-        log_dir=training_args.log_dir
+        log_dir=training_args.log_dir,
     )
 
 

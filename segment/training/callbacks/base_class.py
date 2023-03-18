@@ -4,6 +4,7 @@ import torch.nn as nn
 
 from ..trainer.base_trainer import BaseTrainer
 
+
 class Callback:
     def __init__(self):
         self.trainer = None

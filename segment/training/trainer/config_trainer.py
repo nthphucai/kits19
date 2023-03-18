@@ -24,11 +24,11 @@ class ConfigTrainer:
         config: dict = None,
         save_config_path: str = None,
         verbose: bool = False,
-        num_train_epochs:int=2,
-        output_dir:Optional[str]=None,
-        log_dir:str=None, 
-        fp16:bool=False,
-        fold: Optional[int]=1
+        num_train_epochs: int = 2,
+        output_dir: Optional[str] = None,
+        log_dir: str = None,
+        fp16: bool = False,
+        fold: Optional[int] = 1,
     ):
         self.config = config
         self.save_config_path = save_config_path
@@ -40,11 +40,11 @@ class ConfigTrainer:
         scheduler_configs = config.get("schedulers", [])
         model_config = config.get("model", []) if model is None else None
 
-        self.num_train_epochs=num_train_epochs
-        self.output_dir=output_dir
-        self.log_dir=log_dir
-        self.fp16=fp16,
-        self.fold=fold
+        self.num_train_epochs = num_train_epochs
+        self.output_dir = output_dir
+        self.log_dir = log_dir
+        self.fp16 = (fp16,)
+        self.fold = fold
 
         print("creating train, valid loader") if verbose else None
         self.dl_train, self.dl_valid = self._get_dataloader(data_loaders)

@@ -12,8 +12,9 @@ from .base_class import Callback
 
 
 class ReduceLROnPlateau(Callback):
-
-    def __init__(self, monitor="val loss", patience=5, mode="min", factor=0.1, verbose=1):
+    def __init__(
+        self, monitor="val loss", patience=5, mode="min", factor=0.1, verbose=1
+    ):
         super().__init__()
 
         self.monitor = monitor
@@ -24,8 +25,13 @@ class ReduceLROnPlateau(Callback):
         self.scheduler = None
 
     def on_train_begin(self, **train_configs):
-        self.scheduler = schedulers.ReduceLROnPlateau(self.optimizers[0], mode=self.mode, factor=self.factor,
-                                                      patience=self.patience - 1, verbose=bool(self.verbose))
+        self.scheduler = schedulers.ReduceLROnPlateau(
+            self.optimizers[0],
+            mode=self.mode,
+            factor=self.factor,
+            patience=self.patience - 1,
+            verbose=bool(self.verbose),
+        )
 
     def on_epoch_end(self, epoch, logs=None):
         for i, param_group in enumerate(self.optimizers[0].param_groups):
@@ -34,12 +40,13 @@ class ReduceLROnPlateau(Callback):
         self.scheduler.step(logs[self.monitor])
 
     def extra_repr(self):
-        return f"monitor={self.monitor}, patience={self.patience}, mode={self.mode}, factor={self.factor}, " \
-               f"verbose={self.verbose}"
+        return (
+            f"monitor={self.monitor}, patience={self.patience}, mode={self.mode}, factor={self.factor}, "
+            f"verbose={self.verbose}"
+        )
 
 
 class EarlyStopping(Callback):
-
     def __init__(self, monitor="val loss", patience=10, mode="min", verbose=1):
         super().__init__()
 
@@ -59,12 +66,16 @@ class EarlyStopping(Callback):
         reset_counter = is_max or is_min
 
         if reset_counter:
-            print(f"{self.monitor} improved from {self.monitor_val} to {monitor_val}") if self.verbose else None
+            print(
+                f"{self.monitor} improved from {self.monitor_val} to {monitor_val}"
+            ) if self.verbose else None
             self.monitor_val = monitor_val
             self.patience_count = 0
         else:
             self.patience_count += 1
-            print(f"model didn't improve from {self.monitor_val:.04f}") if self.verbose else None
+            print(
+                f"model didn't improve from {self.monitor_val:.04f}"
+            ) if self.verbose else None
 
         if self.patience_count == self.patience:
             self.trainer.training = False
@@ -75,9 +86,15 @@ class EarlyStopping(Callback):
 
 
 class ModelCheckpoint(Callback):
-
-    def __init__(self, file_path, monitor="val loss", mode="min",
-                 save_best_only=True, overwrite=True, verbose=1):
+    def __init__(
+        self,
+        file_path,
+        monitor="val loss",
+        mode="min",
+        save_best_only=True,
+        overwrite=True,
+        verbose=1,
+    ):
         super().__init__()
 
         self.file_path = file_path
@@ -115,31 +132,33 @@ class ModelCheckpoint(Callback):
             self.running_monitor_val = monitor_val
 
     def extra_repr(self):
-        return f"file_path={self.file_path}, monitor={self.monitor}, mode={self.mode}, " \
-               f"save_best_only={self.save_best_only}, overwrite={self.overwrite}, verbose={self.verbose}"
+        return (
+            f"file_path={self.file_path}, monitor={self.monitor}, mode={self.mode}, "
+            f"save_best_only={self.save_best_only}, overwrite={self.overwrite}, verbose={self.verbose}"
+        )
 
 
 class CSVLogger(Callback):
     """Callback that streams epoch results to a csv file.
 
-  Supports all values that can be represented as a string,
-  including 1D iterables such as np.ndarray.
+    Supports all values that can be represented as a string,
+    including 1D iterables such as np.ndarray.
 
-  Example:
+    Example:
 
-  ```python
-  csv_logger = CSVLogger('training.log')
-  model.fit(X_train, Y_train, callbacks=[csv_logger])
-  ```
+    ```python
+    csv_logger = CSVLogger('training.log')
+    model.fit(X_train, Y_train, callbacks=[csv_logger])
+    ```
 
-  Arguments:
-      filename: filename of the csv file, e.g. 'run/log.csv'.
-      separator: string used to separate elements in the csv file.
-      append: True: append if file exists (useful for continuing
-          training). False: overwrite existing file,
-  """
+    Arguments:
+        filename: filename of the csv file, e.g. 'run/log.csv'.
+        separator: string used to separate elements in the csv file.
+        append: True: append if file exists (useful for continuing
+            training). False: overwrite existing file,
+    """
 
-    def __init__(self, filename, separator=',', append=False):
+    def __init__(self, filename, separator=",", append=False):
         super().__init__()
         self.sep = separator
         self.filename = filename
@@ -148,21 +167,21 @@ class CSVLogger(Callback):
         self.keys = None
         self.append_header = True
 
-        self.file_flags = ''
-        self._open_args = {'newline': '\n'}
+        self.file_flags = ""
+        self._open_args = {"newline": "\n"}
         self.csv_file = None
 
     def on_train_begin(self, **train_configs):
         if self.append:
             if os.path.exists(self.filename):
-                with open(self.filename, 'r' + self.file_flags) as f:
+                with open(self.filename, "r" + self.file_flags) as f:
                     self.append_header = not bool(len(f.readline()))
-            mode = 'a'
+            mode = "a"
         else:
-            mode = 'w'
-        self.csv_file = io.open(self.filename,
-                                mode + self.file_flags,
-                                **self._open_args)
+            mode = "w"
+        self.csv_file = io.open(
+            self.filename, mode + self.file_flags, **self._open_args
+        )
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
@@ -170,7 +189,7 @@ class CSVLogger(Callback):
         def handle_value(k):
             is_zero_dim_ndarray = isinstance(k, np.ndarray) and k.ndim == 0
             if isinstance(k, collections.Iterable) and not is_zero_dim_ndarray:
-                return '"[%s]"' % (', '.join(map(str, k)))
+                return '"[%s]"' % (", ".join(map(str, k)))
             else:
                 return k
 
@@ -182,16 +201,15 @@ class CSVLogger(Callback):
             class CustomDialect(csv.excel):
                 delimiter = self.sep
 
-            fieldnames = ['epoch'] + self.keys
+            fieldnames = ["epoch"] + self.keys
 
             self.writer = csv.DictWriter(
-                self.csv_file,
-                fieldnames=fieldnames,
-                dialect=CustomDialect)
+                self.csv_file, fieldnames=fieldnames, dialect=CustomDialect
+            )
             if self.append_header:
                 self.writer.writeheader()
 
-        row_dict = collections.OrderedDict({'epoch': epoch})
+        row_dict = collections.OrderedDict({"epoch": epoch})
         row_dict.update((key, handle_value(logs[key])) for key in self.keys)
         self.writer.writerow(row_dict)
         self.csv_file.flush()
@@ -205,7 +223,6 @@ class CSVLogger(Callback):
 
 
 class Tensorboard(Callback):
-
     def __init__(self, log_dir, steps=50, flushes=2, inputs=None, current_step=0):
         super().__init__()
 
@@ -217,8 +234,12 @@ class Tensorboard(Callback):
 
         train_log = "train"
         valid_log = "valid"
-        self.train_writer = SummaryWriter(f"{self.log_dir}/{train_log}", flush_secs=self.flushes)
-        self.valid_writer = SummaryWriter(f"{self.log_dir}/{valid_log}", flush_secs=self.flushes)
+        self.train_writer = SummaryWriter(
+            f"{self.log_dir}/{train_log}", flush_secs=self.flushes
+        )
+        self.valid_writer = SummaryWriter(
+            f"{self.log_dir}/{valid_log}", flush_secs=self.flushes
+        )
 
     def on_train_begin(self, **train_configs):
         if self.inputs is not None:
@@ -243,5 +264,7 @@ class Tensorboard(Callback):
         self.valid_writer.close()
 
     def extra_repr(self):
-        return f"log_dir={self.log_dir}, steps={self.steps}, flushes={self.flushes}, " \
-               f"inputs={self.inputs.shape if self.inputs is not None else None}, current_step={self.current_step}"
+        return (
+            f"log_dir={self.log_dir}, steps={self.steps}, flushes={self.flushes}, "
+            f"inputs={self.inputs.shape if self.inputs is not None else None}, current_step={self.current_step}"
+        )

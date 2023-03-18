@@ -5,11 +5,13 @@ from typing import Iterable, List, Optional
 import torch
 import torch.nn as nn
 
+from segment.training.callbacks.clr import LrFinder
+
 from ...utils.file_utils import logger
 from ..callbacks.utils import plot_df, save_logs, save_model
 from .base_trainer import BaseTrainer
 from .utils import get_dict
-from segment.training.callbacks.clr import LrFinder
+
 
 class Trainer(BaseTrainer):
     def __init__(
@@ -25,8 +27,7 @@ class Trainer(BaseTrainer):
         output_dir: str,
         log_dir: str,
         fp16: bool = False,
-        fold: Optional[int] = None
-
+        fold: Optional[int] = None,
     ):
         super().__init__(
             model, train_data, val_data, loss, optimizer, scheduler, metric
@@ -86,7 +87,7 @@ class Trainer(BaseTrainer):
 
     def run(self, mode=["train", "valid"], callbacks=None):
         callbacks = callbacks or []
-        
+
         [c.set_trainer(self) for c in callbacks]
 
         train_configs = {
@@ -121,11 +122,11 @@ class Trainer(BaseTrainer):
                     )
                     logs.update(logs_)
 
-                if self.output_dir is not None:            
+                if self.output_dir is not None:
                     if (e > 1) and (loss < self.best_loss):
                         self.best_loss = loss
                         save_model(loss, e, self.model, self.opt, self.output_dir)
-                    
+
                     if self.log_dir is not None:
                         _, filename = save_logs(e, logs, self.log_dir)
                         # plot_df(results=filename)
@@ -133,4 +134,3 @@ class Trainer(BaseTrainer):
             [c.on_epoch_end(e, logs) for c in callbacks]
 
         [c.on_train_end() for c in callbacks]
-
