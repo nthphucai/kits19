@@ -11,3 +11,15 @@ preprocess:
   vol_min: -122.0
   vol_max: 470.0 
   size: 48
+
+create_dataset:
+  input_size: [80, 80, 160]
+  expand_slice_z: 30
+  expand_slice_y: 15
+  expand_slice_x: 15
+  crop_type: random
+  use_bground: False
+  z_range: [35, 80]
+  y_range: [100, 165]
+  x_range: [55, 200]
+

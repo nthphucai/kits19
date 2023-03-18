@@ -74,7 +74,8 @@ def main():
         seg_path=data_args.train_seg_path,
         configs=configs,
     )
-    result = preprocess.run()
+    # result = preprocess.run()
+    result = preprocess.to_dict()
 
     if data_args.split_kfold is not None:
         result = split_data(data=result, n_split=data_args.split_kfold)

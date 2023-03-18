@@ -1,5 +1,5 @@
 import os
-import shutil
+import glob
 from abc import ABC, abstractmethod
 from itertools import chain
 from typing import List
@@ -63,6 +63,19 @@ class BasePreprocess3D(ABC):
 
         flat_out = list(chain(*temp_lst))
         return flat_out
+
+    def to_dict(self):
+        cropped_vol_path = glob.glob(f"{self.vol_path}/*")
+        cropped_seg_path = [os.path.join(self.seg_path, os.path.basename(path).replace("imaging", "segmentation")) for path in cropped_vol_path]
+        case_id = [os.path.basename(file).split("_imaging")[0] for file in cropped_vol_path]
+
+        result = [
+                {"case_id": id_, "new_vol_path": vol_path , "new_seg_path": seg_path}
+                for id_, vol_path, seg_path in zip(
+                    case_id, cropped_vol_path, cropped_seg_path
+                )
+            ]
+        return result        
 
     def _generate_batch(self, batch) -> dict:
         batch_dict = [
