@@ -11,7 +11,6 @@ import torch
 
 
 def save_logs(epoch, logs, log_path):
-    filename = log_path
     file_flags = ""
     _open_args = {"newline": "\n"}
     csv_file = None
@@ -35,14 +34,14 @@ def save_logs(epoch, logs, log_path):
     """
      'a': Append mode that opens an existing file or creates a new file for appending.
     """
-    if os.path.exists(filename):
-        with open(filename, "r" + file_flags) as f:
+    if os.path.exists(log_path):
+        with open(log_path, "r" + file_flags) as f:
             append_header = not bool(len(f.readline()))
         mode = "a"
     else:
         mode = "w"
 
-    csv_file = io.open(filename, mode + file_flags, **_open_args)
+    csv_file = io.open(log_path, mode + file_flags, **_open_args)
     writer = csv.DictWriter(csv_file, fieldnames=fieldnames, dialect=CustomDialect)
     if append_header:
         writer.writeheader()
@@ -51,7 +50,7 @@ def save_logs(epoch, logs, log_path):
     writer.writerow(row_dict)
     csv_file.flush()
 
-    return csv_file, filename
+    return csv_file, log_path
 
 
 def save_model(loss, epoch, model, optimizer, model_path):

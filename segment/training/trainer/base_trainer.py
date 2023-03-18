@@ -1,3 +1,4 @@
+from typing import List
 from abc import ABC, abstractmethod
 
 import torch
@@ -26,7 +27,6 @@ class BaseTrainer(ABC):
         self.score = metric
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-
         self.model.to(self.device)
 
     def loss_and_output(self, imgs, targets):
@@ -42,11 +42,11 @@ class BaseTrainer(ABC):
         self.optimizer.zero_grad()
         self.model.train()
         with get_progress(total=len(self.dl_train)) as pbar:
-            for iter_, batch_data in enumerate(self.dl_train):
+            for step, batch_data in enumerate(self.dl_train):
                 data = self._extract_loader(batch_data)
                 imgs, targets = data
-                [c.on_training_batch_begin(epoch, iter_, data) for c in callbacks]
-                loss, preds = self._train_one_batch(iter_, imgs, targets)
+                [c.on_training_batch_begin(epoch=epoch, step=step, data=data) for c in callbacks]
+                loss, preds = self._train_one_batch(step, imgs, targets)
                 pbar.update()
 
                 with torch.no_grad():
@@ -54,7 +54,7 @@ class BaseTrainer(ABC):
                     self._update_one_batch(preds, targets)
                     [
                         c.on_training_batch_end(
-                            epoch=epoch, step=iter_, data=data, logs=total_loss
+                            epoch=epoch, step=step, data=data, logs=total_loss
                         )
                         for c in callbacks
                     ]

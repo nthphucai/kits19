@@ -30,15 +30,13 @@ class LrFinder(Callback):
     def on_train_begin(self, **train_configs):
         epochs = self.epochs
         iterations = len(train_configs["train_loader"])
-        # for g in self.optimizers[0].param_groups:
-        for g in self.optimizers.param_groups:
+        for g in self.optimizers[0].param_groups:
             g["lr"] = self.min_lr
 
         self.gamma = (self.max_lr - self.min_lr) / (epochs * iterations)
 
     def on_training_batch_end(self, epoch, step, data, caches=None, logs=None):
-        for i, g in enumerate(self.optimizers.param_groups):
-            # for i, g in enumerate(self.optimizers[0].param_groups):
+        for i, g in enumerate(self.optimizers[0].param_groups):
             if i in self.history:
                 self.history[i].append((g["lr"], logs))
             else:

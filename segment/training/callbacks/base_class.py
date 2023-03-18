@@ -4,7 +4,6 @@ import torch.nn as nn
 
 from ..trainer.base_trainer import BaseTrainer
 
-
 class Callback:
     def __init__(self):
         self.trainer = None
@@ -27,7 +26,7 @@ class Callback:
     def on_training_batch_begin(self, epoch, step, data):
         pass
 
-    def on_training_batch_end(self, epoch, step, data, caches, logs=None):
+    def on_training_batch_end(self, epoch, step, data, caches=None, logs=None):
         pass
 
     def on_validation_batch_begin(self, epoch, step, data):
@@ -40,7 +39,7 @@ class Callback:
         self.models = [
             m.module if isinstance(m, nn.DataParallel) else m for m in trainer.model
         ]
-        self.optimizers = trainer.optimizer
+        self.optimizers = [trainer.optimizer]
         self.trainer = trainer
 
     def extra_repr(self):

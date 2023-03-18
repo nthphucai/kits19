@@ -24,6 +24,11 @@ class ConfigTrainer:
         config: dict = None,
         save_config_path: str = None,
         verbose: bool = False,
+        num_train_epochs:int=2,
+        output_dir:Optional[str]=None,
+        log_dir:str=None, 
+        fp16:bool=False,
+        fold: Optional[int]=1
     ):
         self.config = config
         self.save_config_path = save_config_path
@@ -34,6 +39,12 @@ class ConfigTrainer:
         callbacks_configs = config.get("callbacks", [])
         scheduler_configs = config.get("schedulers", [])
         model_config = config.get("model", []) if model is None else None
+
+        self.num_train_epochs=num_train_epochs
+        self.output_dir=output_dir
+        self.log_dir=log_dir
+        self.fp16=fp16,
+        self.fold=fold
 
         print("creating train, valid loader") if verbose else None
         self.dl_train, self.dl_valid = self._get_dataloader(data_loaders)
@@ -61,6 +72,10 @@ class ConfigTrainer:
         self.optimizer = self._get_optimizer(opt_config=opt_config)
         print("optimizer: ", self.optimizer) if verbose else None
 
+        self.scheduler = None
+        print("optimizer: ", self.scheduler) if verbose else None
+
+        # self.callbacks = [callback_maps["early_stopping"]()] #self._get_callbacks(callbacks_configs)
         self.callbacks = self._get_callbacks(callbacks_configs)
         print("callbacks: ", self.callbacks) if verbose else None
 
@@ -137,18 +152,20 @@ class ConfigTrainer:
             model=self.model,
             loss=self.loss,
             optimizer=self.optimizer,
-            scheduler=None,
+            scheduler=self.scheduler,
             metric=self.metrics,
-            callbacks=None,
-            num_train_epochs=config["num_epochs"],
-            output_dir=None,
+            num_train_epochs=self.num_train_epochs,
+            output_dir=self.output_dir,
+            log_dir=self.log_dir,
+            fp16=self.fp16,
+            fold=self.fold,
         )
         if self.save_config_path is not None:
             full_file = f"{self.save_config_path}"
             with open(full_file, "w") as handle:
                 json.dump(self.config, handle)
 
-        return runner.run()
+        return runner.run(mode=["train", "valid"], callbacks=self.callbacks)
 
     @staticmethod
     def get_kwargs(configs, excludes=("name",)):
