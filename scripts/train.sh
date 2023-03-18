@@ -7,7 +7,8 @@ python segment/training/train.py \
     --config_dir configs/segment_pipeline.yaml \
     --num_classes 2 \
     --act_func sigmoid \
-    --data_path output/data/train_dataset.pt \
+    --train_dataset_path output/data/train_dataset.pt \
+    --valid_dataset_path output/data/valid_dataset.pt \
     --class_weight_path output/class_weight.npy \
     --num_train_epochs 3 \
     --log_dir output/logs_1803.csv \
