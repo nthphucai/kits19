@@ -38,28 +38,29 @@ class BaseTrainer(ABC):
 
     def train_one_epoch(self, epoch: int, callbacks: list):
         total_loss = 0.0
+
         self.optimizer.zero_grad()
         self.model.train()
         with get_progress(total=len(self.dl_train)) as pbar:
-            for iter, batch_data in enumerate(self.dl_train):
+            for iter_, batch_data in enumerate(self.dl_train):
                 data = self._extract_loader(batch_data)
                 imgs, targets = data
-                [c.on_training_batch_begin(epoch, iter, data) for c in callbacks]
-                loss, preds = self._train_one_batch(iter, imgs, targets)
+                [c.on_training_batch_begin(epoch, iter_, data) for c in callbacks]
+                loss, preds = self._train_one_batch(iter_, imgs, targets)
                 pbar.update()
 
                 with torch.no_grad():
                     total_loss += loss.item()
-                    self._measures_one_epoch(preds, targets)
+                    self._update_one_batch(preds, targets)
                     [
                         c.on_training_batch_end(
-                            epoch=epoch, step=iter, data=data, logs=total_loss
+                            epoch=epoch, step=iter_, data=data, logs=total_loss
                         )
                         for c in callbacks
                     ]
 
         train_loss = total_loss / len(self.dl_train)
-        dsc_batch, dsc_organ, dsc_tumor = self._measures_one_batch()
+        dsc_batch, dsc_organ, dsc_tumor = self._measures_one_epoch()
         return train_loss, dsc_batch, dsc_organ, dsc_tumor
 
     def val_one_epoch(self, epoch: int):
@@ -74,22 +75,26 @@ class BaseTrainer(ABC):
                     pbar.update()
 
                     total_loss += loss.item()
-                    self._measures_one_epoch(preds, targets)
+
+                    self._measures_one_batch(preds, targets)
 
         val_loss = total_loss / len(self.dl_val)
-        dsc_batch, dsc_organ, dsc_tumor = self._measures_one_batch()
+        dsc_batch, dsc_organ, dsc_tumor = self._measures_one_epoch()
         return val_loss, dsc_batch, dsc_organ, dsc_tumor
 
     def _extract_loader(self, batch_data):
         imgs, targets = batch_data
         return imgs, targets
 
-    def _measures_one_epoch(self, preds, targets):
-        self.score.update(preds.detach().cpu().numpy(), targets.detach().cpu().numpy())
+    def _measures_one_epoch(self):
+        dsc_batch, dsc_organ, dsc_tumor = self.score.get_dsc_one_epoch()
+        return dsc_batch, dsc_organ, dsc_tumor
 
-    @abstractmethod
-    def _measures_one_batch(self, targets, preds):
-        pass
+    def _update_one_batch(self, preds, targets):
+        self.score.update_one_batch(
+            preds.detach().cpu().numpy(), 
+            targets.detach().cpu().numpy()
+        )
 
     @abstractmethod
     def _train_one_batch(self, imgs, targets):

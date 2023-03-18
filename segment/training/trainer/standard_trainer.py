@@ -64,11 +64,6 @@ class Trainer(BaseTrainer):
             loss, _ = self._train_one_batch(iter, imgs, targets)
             print("loss:", loss.item())
 
-    def _measures_one_batch(self):
-        dsc_batch = self.score.get_dsc_batch()
-        dsc_organ, dsc_tumor = self.score.get_dsc_class()
-        return dsc_batch, dsc_organ, dsc_tumor
-
     def _train_one_batch(self, iter, imgs, targets):
         if torch.cuda.is_available():
             with torch.cuda.amp.autocast():

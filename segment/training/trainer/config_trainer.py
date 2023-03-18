@@ -4,6 +4,7 @@ from typing import Optional, Union
 import numpy as np
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader as load_batch
 
 from ...models import model_maps
 from ...training.callbacks import callback_maps
@@ -18,7 +19,7 @@ from ...utils import parameter as para
 class ConfigTrainer:
     def __init__(
         self,
-        data: Union[tuple, list],
+        data_loaders: Union[tuple, list],
         model: Optional[nn.Module] = None,
         config: dict = None,
         save_config_path: str = None,
@@ -35,7 +36,7 @@ class ConfigTrainer:
         model_config = config.get("model", []) if model is None else None
 
         print("creating train, valid loader") if verbose else None
-        self.dl_train, self.dl_valid = self._get_repo(data)
+        self.dl_train, self.dl_valid = self._get_dataloader(data_loaders)
         if verbose:
             print("train: ", len(self.dl_train))
             print("valid: ", len(self.dl_valid)) if self.dl_valid is not None else None
@@ -63,17 +64,17 @@ class ConfigTrainer:
         self.callbacks = self._get_callbacks(callbacks_configs)
         print("callbacks: ", self.callbacks) if verbose else None
 
-    def _get_repo(self, loaders):
+    def _get_dataloader(self, loaders):
         if isinstance(loaders, (tuple, list)):
             train, valid = loaders
         else:
             train = loaders
-            valid = None
+            valid = None 
 
         return train, valid
 
     def _get_model(self, model_config):
-        name = model_config["name"]
+        name = model_config["path"]
         kwargs = self.get_kwargs(model_config, ["name"])
         model = model_maps[name](**kwargs)
         if "checkpoint" in model_config:
@@ -90,9 +91,7 @@ class ConfigTrainer:
     def _get_loss(self, loss_config):
         name = loss_config["name"]
         kwargs = self.get_kwargs(loss_config, ["name", "class_weight"])
-        class_weight = np.load(loss_config["class_weight"]).reshape(
-            1, para.num_classes, *[1] * 3
-        )
+        class_weight = np.load(loss_config["class_weight"])
         print("class_weight:", class_weight)
         loss = loss_maps[name](class_weight=class_weight, **kwargs)
         return loss
@@ -114,7 +113,6 @@ class ConfigTrainer:
             )
 
         opt = opt([p for p in self.model.parameters() if p.requires_grad], **kwargs)
-
         return opt
 
     def _get_callbacks(self, callbacks_configs):
@@ -142,7 +140,7 @@ class ConfigTrainer:
             scheduler=None,
             metric=self.metrics,
             callbacks=None,
-            num_train_epochs=5,
+            num_train_epochs=config["num_epochs"],
             output_dir=None,
         )
         if self.save_config_path is not None:

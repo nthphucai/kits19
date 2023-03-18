@@ -10,10 +10,6 @@ from segment.models.modules.common import (BN_Conv_ReLU, Decoder_Res,
                                            DoubleConv, Encoder_Res,
                                            PretrainedBlock, ResBlock, stem)
 
-# ===============================================================================================================
-#                                          BASIC UNET MODULES
-# ===============================================================================================================
-
 
 class BasicUnet3D(nn.Module):
     def __init__(self, in_imgs, in_channels, num_classes):
@@ -50,13 +46,12 @@ class BasicUnet3D(nn.Module):
         return out
 
 
-# =================================================================================================================================================
-#  Model name: RESIDUAL UNET MODULES
-#  Source    : https://github.com/nikhilroxtomar/Deep-Residual-Unet/blob/master/Deep%20Residual%20UNet.ipynb
-# =================================================================================================================================================
-
 
 class UnetRes3D_v1(nn.Module):
+    """
+    Residual Unet Modules
+    Source: https://github.com/nikhilroxtomar/Deep-Residual-Unet/blob/master/Deep%20Residual%20UNet.ipynb
+    """
     def __init__(self, in_channels, filters=[16, 32, 64, 128, 256], num_classes=3):
         super().__init__()
         self.norm = Normalization()
@@ -111,17 +106,15 @@ class UnetRes3D_v1(nn.Module):
         return output
 
 
-# ========================================================================================================================================
-# Model : RES_UNET
-# Source: https://arxiv.org/pdf/1908.02182.pdf
-# ========================================================================================================================================
-
-
 layer_num = [1, 2, 3, 4, 5]
 filters = [24, 60, 120, 240, 320]
 
 
 class UnetRes3D_v2(nn.Module):
+    """
+    Residual Unet Modules
+    Source: https://arxiv.org/pdf/1908.02182.pdf
+    """
     def __init__(
         self, in_channels, filters=filters, layer_num=layer_num, num_classes=3
     ):

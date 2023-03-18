@@ -27,12 +27,12 @@ class DataTrainingArguments:
     )
 
     train_file_name: Optional[str] = field(
-        default="train_dataset",
+        default="train_dataset.pt",
         metadata={"help": "The name of train file"}
     )
     
     valid_file_name: Optional[str] = field(
-        default="train_dataset.pt",
+        default="valid_dataset.pt",
         metadata={"help": "The name of valid file"}
     )
 
@@ -59,7 +59,8 @@ def get_dataset(
     config = read_yaml_file(config_path)["create_dataset"]
     print("config file:\n", config)
     
-    df = pd.DataFrame(data)
+    df = pd.DataFrame(data)[:10]
+    logger.info(f"The number of data at {df.shape[0]}")
     train_df = df.loc[df["fold"] != fold].reset_index(drop=True)
     valid_df = df.loc[df["fold"] == fold].reset_index(drop=True)
 
@@ -72,7 +73,7 @@ def get_dataset(
 
     valid_file_path = os.path.join(out_path, valid_file_name)
     torch.save(valid_ds, os.path.join(out_path, valid_file_path))
-    logger.info(f"Saved train dataset at {valid_file_path}")
+    logger.info(f"Saved valid dataset at {valid_file_path}")
     return train_ds, valid_ds
 
 def main():
