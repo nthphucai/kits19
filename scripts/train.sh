@@ -2,6 +2,11 @@
 set -e
 
 python segment/training/train.py \
-    --output_dir output/models/simple-question/v1.4 \
-    --data_path /content/drive/MyDrive/Seg3D/KiTS2019/kits19/output/data/kits19_data.pt \
-    --num_epoch 20
+    --model_name_or_path UnetRes_v2 \
+    --output_dir output/models \
+    --config_dir configs/segment_pipeline.yaml \
+    --num_classes 2 \
+    --act_func sigmoid \
+    --data_path output/data/train_dataset.pt \
+    --class_weight_path output/class_weight.npy \
+    
