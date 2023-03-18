@@ -27,7 +27,6 @@ class Trainer(BaseTrainer):
         output_dir: str,
         log_dir: str,
         fp16: bool = False,
-        fold: Optional[int]=None,
     ):
         super().__init__(
             model, train_data, val_data, loss, optimizer, scheduler, metric

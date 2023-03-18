@@ -29,7 +29,6 @@ class ConfigTrainer:
         output_dir: Optional[str] = None,
         log_dir: str = None,
         fp16: bool = False,
-        fold: Optional[int] = 1,
         do_train: bool = True,
         do_eval: bool = False, 
     ):
@@ -47,7 +46,6 @@ class ConfigTrainer:
         self.output_dir = output_dir
         self.log_dir = log_dir
         self.fp16 = fp16
-        self.fold = fold
 
         print("creating train, valid loader") if verbose else None
         self.dl_train = train_dataloaders
@@ -165,7 +163,6 @@ class ConfigTrainer:
             output_dir=self.output_dir,
             log_dir=self.log_dir,
             fp16=self.fp16,
-            fold=self.fold,
         )
         if self.save_config_path is not None:
             full_file = f"{self.save_config_path}"

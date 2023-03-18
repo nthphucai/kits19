@@ -3,9 +3,8 @@ name: kits2019_segment
 
 segment_kits:
   model:
-    name: UnetRes_v2
-    num_classes: 2
-    act_fnc: sigmoid
+    num_classes: 3
+    act_func: softmax
   criterion:
     class_weight: /content/drive/MyDrive/Seg3D/KiTS2019/kits19/output/class_weight.npy
     name: dice_bce
@@ -13,19 +12,15 @@ segment_kits:
     label_smoothing: 0.01 
   metric: 
     name: dice
-    binary: True
+    binary: False
   optimizer: 
     name: adam
     lr: 1.e-4
   scheduler: 
     name: reduce_plateu
+  verbose: True
   callbacks: [{"name": "checkpoint", "file_path": "output/file_path.pt"}]
-  verbose: False
-  fold: None
   save_path:
     save_log_path: log_UnetRes3D_softmax
     save_model_path: best_UnetRes3D_softmax
-  training_args:
-    num_train_epoch: 2
-    save_model: True
     

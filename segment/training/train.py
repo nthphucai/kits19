@@ -40,11 +40,6 @@ class ModelArguments:
         metadata={"help": "Path to config file"},
     )
 
-    num_classes: Optional[int] = field(
-        default=2,
-        metadata={"help": "The number classes to classify"},
-    )
-
     freeze_feature: Optional[bool] = field(
         default=False,
         metadata={"help": "Whether to freeze_feature"},
@@ -102,18 +97,19 @@ def runner(
     model_name_or_path: str,
     cache_dir: Optional[str],
     freeze_feature: bool = False,
-    num_classes: int = 2,
     act_func: str = "sigmoid",
     num_train_epochs: str = 2,
     output_dir: str = None,
     log_dir: str = None,
     fp16: bool = False,
-    fold: Optional[int] = 1,
     do_train: bool=True,
     do_eval: bool=False
 ):
     config = read_yaml_file(config_dir)["segment_kits"]
-    class_weight = np.array([0.25, 0.75])
+    num_classes = config["model"]["num_classes"]
+    act_func = config["model"]["act_func"]
+    
+    class_weight = np.array([0.1, 0.3, 0.6]) if num_classes == 3 else np.array([0.25, 0.75])
     class_weight = class_weight.reshape(1, num_classes, *[1] * 3)
     np.save(class_weight_path, class_weight)
     logger.info("class weight saved at %s", class_weight_path)
@@ -149,7 +145,6 @@ def runner(
         output_dir=output_dir,
         log_dir=log_dir,
         fp16=fp16,
-        fold=fold,
         do_train=do_train,
         do_eval=do_eval
     )
@@ -174,7 +169,6 @@ def main():
         output_dir=model_args.output_dir,
         cache_dir=model_args.cache_dir,
         freeze_feature=model_args.freeze_feature,
-        num_classes=model_args.num_classes,
         act_func=model_args.act_func,
         num_train_epochs=training_args.num_train_epochs,
         log_dir=training_args.log_dir,
