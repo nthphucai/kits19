@@ -50,36 +50,41 @@ class BaseTrainer(ABC):
                     for c in callbacks
                 ]
                 loss, preds = self._train_one_batch(step, imgs, targets)
+                total_loss += loss.item()
+                self._update_one_batch(preds, targets)
+                
                 pbar.update()
-
-                with torch.no_grad():
-                    total_loss += loss.item()
-                    self._update_one_batch(preds, targets)
-                    [
-                        c.on_training_batch_end(
-                            epoch=epoch, step=step, data=data, logs=total_loss
-                        )
-                        for c in callbacks
-                    ]
+                [
+                  c.on_training_batch_end(epoch=epoch, step=step, data=data, logs=total_loss) 
+                  for c in callbacks
+                ]
 
         train_loss = total_loss / len(self.dl_train)
         dsc_batch, dsc_organ, dsc_tumor = self._measures_one_epoch()
         return train_loss, dsc_batch, dsc_organ, dsc_tumor
 
-    def val_one_epoch(self, epoch: int):
+    def val_one_epoch(self, epoch: int, callbacks=()):
         total_loss = 0.0
+
         self.model.eval()
         with torch.no_grad():
-            with get_progress(enumerate(self.dl_val), total=len(self.dl_val)) as pbar:
-                for _, batch_data in enumerate(self.dl_train):
-                    imgs, targets = self._extract_loader(batch_data)
-                    loss, preds = self._eval_one_batch(imgs, targets)
+            with get_progress(total=len(self.dl_val)) as pbar:
+                for step, batch_data in enumerate(self.dl_val):
+                  data = self._extract_loader(batch_data)
+                  imgs, targets = data                    
+                  [
+                      c.on_validation_batch_begin(epoch, step=step, data=data)
+                      for c in callbacks
+                  ]
+                  loss, preds = self._eval_one_batch(imgs, targets)
+                  total_loss += loss.item()
+                  self._update_one_batch(preds, targets)
 
-                    pbar.update()
-
-                    total_loss += loss.item()
-
-                    self._measures_one_batch(preds, targets)
+                  pbar.update()
+                  [
+                    c.on_validation_batch_end(epoch=epoch, step=step, data=data, logs=total_loss) 
+                    for c in callbacks
+                  ]
 
         val_loss = total_loss / len(self.dl_val)
         dsc_batch, dsc_organ, dsc_tumor = self._measures_one_epoch()

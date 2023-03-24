@@ -1,10 +1,11 @@
+import os
 import datetime
 from dataclasses import dataclass, field
 from typing import Optional
 
+import torch
 import numpy as np
 import pandas as pd
-import torch
 
 from segment.data.data_loaders.processor import DataProcessor
 from segment.models import model_maps
@@ -105,6 +106,13 @@ def runner(
     do_train: bool=True,
     do_eval: bool=False
 ):
+
+    if not os.path.exists(os.path.dirname(output_dir)):
+        os.makedirs(os.path.dirname(output_dir))
+
+    if not os.path.exists(os.path.dirname(log_dir)):
+        os.makedirs(os.path.dirname(log_dir))
+
     config = read_yaml_file(config_dir)["segment_kits"]
     num_classes = config["model"]["num_classes"]
     act_func = config["model"]["act_func"]
@@ -112,7 +120,6 @@ def runner(
     class_weight = np.array([0.1, 0.3, 0.6]) if num_classes == 3 else np.array([0.25, 0.75])
     class_weight = class_weight.reshape(1, num_classes, *[1] * 3)
     np.save(class_weight_path, class_weight)
-    logger.info("class weight saved at %s", class_weight_path)
 
     model = get_model(
         model=model_maps[model_name_or_path],
@@ -124,19 +131,13 @@ def runner(
 
     train_dataset = torch.load(train_dataset_path)
     valid_dataset = torch.load(valid_dataset_path) if valid_dataset_path is not None else None
-
-    processor = DataProcessor(batch_size=4, workers=2)
-    train_dataloaders = processor.get_dloader(train_dataset) 
-    valid_dataloaders = processor.get_dloader(valid_dataset) if valid_dataset_path is not None else None
-
-    # train_minibatch = next(iter(dataloader))[0]
-    # print("dataloader shape: ", train_minibatch.shape)
-    # output = model(train_minibatch)
-    # print("predict shape:", output.shape)
+    
+    logger.info("The number of train samples: %s", len(train_dataset))
+    logger.info("The number of eval samples: %s", len(valid_dataset))
 
     trainer = ConfigTrainer(
-        train_dataloaders=train_dataloaders,
-        valid_dataloaders=valid_dataloaders,
+        train_dataset=train_dataset,
+        valid_dataset=valid_dataset,
         model=model,
         config=config,
         save_config_path=None,
@@ -152,6 +153,7 @@ def runner(
 
     logger.info("Save logs at directory: %s", log_dir)
     logger.info("Save model at directory: %s", output_dir)
+    logger.info("Save class weight at directory %s", class_weight_path)
 
 
 def main():

@@ -33,7 +33,7 @@ class Callback:
     def on_validation_batch_begin(self, epoch, step, data):
         pass
 
-    def on_validation_batch_end(self, epoch, step, data, caches):
+    def on_validation_batch_end(self, epoch, step, data, caches=None, logs=None):
         pass
 
     def set_trainer(self, trainer: BaseTrainer):

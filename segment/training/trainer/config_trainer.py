@@ -4,7 +4,7 @@ from typing import Optional, Union
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset
 
 from ...models import model_maps
 from ...training.callbacks import callback_maps
@@ -14,13 +14,15 @@ from ...training.optimizers import optimizer_maps
 from ...training.schedulers import scheduler_maps
 from ...training.trainer.standard_trainer import Trainer
 from ...utils import parameter as para
+from ...utils.file_utils import logger
+from ...data.data_loaders.processor import DataProcessor
 
 
 class ConfigTrainer:
     def __init__(
         self,
-        train_dataloaders: DataLoader,
-        valid_dataloaders: Optional[DataLoader],
+        train_dataset: Dataset,
+        valid_dataset: Optional[Dataset],
         model: Optional[nn.Module] = None,
         config: dict = None,
         save_config_path: str = None,
@@ -48,8 +50,7 @@ class ConfigTrainer:
         self.fp16 = fp16
 
         print("creating train, valid loader") if verbose else None
-        self.dl_train = train_dataloaders
-        self.dl_valid = valid_dataloaders
+        self.dl_train, self.dl_valid = self._get_dataloader(train_dataset, valid_dataset)
 
         print("creating model") if verbose else None
         self.model = self._get_model(model_config) if model is None else model
@@ -77,21 +78,13 @@ class ConfigTrainer:
         self.callbacks = self._get_callbacks(callbacks_configs)
         print("callbacks: ", self.callbacks) if verbose else None
 
-        if do_eval and do_train:
-          self.mode = ("train", "valid")
-        elif do_train:
-          self.mode = ("train", )
-        elif do_eval:
-            self.mode = ("valid", )
+        self.mode = ("train", "eval") if do_eval and do_train else ("eval", )
 
-    def _get_dataloader(self, loaders):
-        if isinstance(loaders, (tuple, list)):
-            train, valid = loaders
-        else:
-            train = loaders
-            valid = None
-
-        return train, valid
+    def _get_dataloader(self, train_dataset, valid_dataset):
+        processor = DataProcessor(batch_size=4, workers=2)
+        train_dataloaders = processor.get_dloader(train_dataset) 
+        valid_dataloaders = processor.get_dloader(valid_dataset) if valid_dataset is not None else None
+        return train_dataloaders, valid_dataloaders
 
     def _get_model(self, model_config):
         name = model_config["path"]

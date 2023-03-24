@@ -7,7 +7,6 @@ import torch.nn as nn
 
 from segment.training.callbacks.clr import LrFinder
 
-from ...utils.file_utils import logger
 from ..callbacks.utils import plot_df, save_logs, save_model
 from .base_trainer import BaseTrainer
 from .utils import get_dict
@@ -49,14 +48,6 @@ class Trainer(BaseTrainer):
         self.scaler = torch.cuda.amp.GradScaler()
         self.gradient_accumulation = 1
 
-        if self.output_dir is not None:
-            if not os.path.exists(os.path.dirname(self.output_dir)):
-                os.makedirs(os.path.dirname(self.output_dir))
-
-        if self.log_dir is not None:
-            if not os.path.exists(os.path.dirname(self.log_dir)):
-                os.makedirs(os.path.dirname(self.log_dir))
-
     def train_mini_batch(self):
         self.model.train()
         imgs, targets = next(iter(self.dl_train))
@@ -84,7 +75,7 @@ class Trainer(BaseTrainer):
         loss, preds = self.loss_and_output(imgs, targets)
         return loss, preds
 
-    def run(self, mode=("train", "valid"), callbacks=None):
+    def run(self, mode=("train", "eval"), callbacks=None):
         callbacks = callbacks or []
 
         [c.set_trainer(self) for c in callbacks]
@@ -104,12 +95,12 @@ class Trainer(BaseTrainer):
                     e, callbacks=callbacks
                 )
                 if self.scheduler:
-                    self.scheduler.step(loss) if "val" not in mode else None
+                    self.scheduler.step(loss) if "eval" not in mode else None
 
                 logs = get_dict(
                     names=["train loss", "dsc", "dsc_organ", "dsc_tumor"],
                     values=[loss, dsc_batch, dsc_organ, dsc_tumor],
-                    verbose=True,
+                    display=True,
                 )
 
                 if "eval" in mode:
@@ -118,6 +109,7 @@ class Trainer(BaseTrainer):
                     logs_ = get_dict(
                         names=["val loss", "dsc_batch", "dsc_organ", "dsc_tumor"],
                         values=[loss, dsc_batch, dsc_organ, dsc_tumor],
+                        display=True,
                     )
                     logs.update(logs_)
 
@@ -128,7 +120,6 @@ class Trainer(BaseTrainer):
 
                     if self.log_dir is not None:
                         _, filename = save_logs(e, logs, self.log_dir)
-                        # plot_df(results=filename)
 
             [c.on_epoch_end(e, logs) for c in callbacks]
 
