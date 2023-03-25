@@ -78,12 +78,15 @@ class ConfigTrainer:
         self.callbacks = self._get_callbacks(callbacks_configs)
         print("callbacks: ", self.callbacks) if verbose else None
 
-        self.mode = ("train", "eval") if do_eval and do_train else ("eval", )
+        self.mode = ("train", "eval") if do_eval and do_train else ("train", )
 
     def _get_dataloader(self, train_dataset, valid_dataset):
         processor = DataProcessor(batch_size=4, workers=2)
         train_dataloaders = processor.get_dloader(train_dataset) 
         valid_dataloaders = processor.get_dloader(valid_dataset) if valid_dataset is not None else None
+
+        minibatch = next(iter(train_dataloaders))
+        print("data shape:", minibatch[0].shape)
         return train_dataloaders, valid_dataloaders
 
     def _get_model(self, model_config):
