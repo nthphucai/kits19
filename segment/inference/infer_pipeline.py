@@ -1,63 +1,129 @@
-from typing import List
+import os
+from dataclasses import dataclass, field
+from typing import Optional, Union
 
 import torch
-import torch.nn as nn 
 import numpy as np
-from torch.utils.data import DataLoader
+import nibabel as nib
 
-from segment.data.augs import aug_maps
-from segment.utils.utils import get_progress, multiprocess
-from segment.data.preprocess_data import preprocess_volume
-from segment.data.data_loaders.processor import DataProcessor
+from segment.utils.file_utils import load_json_file, write_json_file, logger, read_yaml_file
+from segment.models.segment import get_model
+from segment.models import model_maps
+from segment.inference.infer import Inference
+from segment.utils.hf_argparser import HfArgumentParser
+from segment.data.postprocess import Postprocess3D
 
-class Inference:
-    def __init__(self, model: nn.Module, data: List[dict]):
-        self.model = model
-        self.data = data
+@dataclass
+class ModelArguments:
+    model_name_or_path: Optional[str] = field(
+        default=None,
+        metadata={"help": "Path to pretrained model or model identifier from ..."},
+    )
 
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+    cache_dir: Optional[str] = field(
+        default=None,
+        metadata={"help": "Where do you want to store the pretrained models"},
+    )
 
-    def create(self) -> List[dict]:
-        test_dataset = list(map(self._get_item, get_progress(self.data)))
-        processor = DataProcessor(batch_size=4, workers=2)
-        test_dataloaders = processor.get_dloader(test_dataset) 
-        
-        prediction = self._predict(model=self.model, dataloaders=test_dataloaders)
-        prediction = self._merge_msk(prediction)
-        return prediction
+    freeze_feature: Optional[bool] = field(
+        default=False,
+        metadata={"help": "Whether to freeze_feature"},
+    )
 
-    def _merge_msk(self, prediction) -> List[dict]:
-        preds = [np.argmax(pred["pred"], axis=0) for pred in prediction]
-        case_id = [pred["case_id"] for pred in prediction]
-        result = [{"case_id": idc, "pred": pred} for idc, pred in zip(case_id, preds)]
-        return result
+    num_classes: Optional[int] = field(
+        default=3,
+        metadata={"help": "The number of classes to be classified"},
 
-    def _get_item(self, item):
-        case_id = item["case_id"]
-        vol_path = item["new_vol_path"]
-        vol_arr = np.load(vol_path)
-        dropped_vol_arr = aug_maps["crop_and_pad_if_needed"](vol_arr, axes=(0,1,2), crop_size=[80, 80, 160])
-        vol_tensor = torch.FloatTensor(dropped_vol_arr).unsqueeze(0)
-        return case_id, vol_tensor
+    )
 
-    @staticmethod
-    def _predict(model: nn.Module, dataloaders:DataLoader, device="cuda") -> List[dict]:
-        preds_lst = []
-        case_id_lst = []
+    act_func: Optional[str] = field(
+        default="softmax", metadata={"help": "activate function"}
+    )
 
-        model.eval()
-        model.to(device)
-        with torch.no_grad():
-            with get_progress(enumerate(dataloaders)) as pbar:
-                for _, (case_id, imgs) in enumerate(dataloaders):
-                    imgs = imgs.to(device)
-                    preds = model(imgs)
-                    pbar.update()
+    config_path: Optional[str] = field(
+        default="configs/preprocess_pipeline.yaml.yaml",
+        metadata={"help": "Path to config file"},
+    )
 
-                    preds_lst.append(preds.detach().cpu().numpy())
-                    case_id_lst.append(case_id)
 
-        preds = np.concatenate(preds_lst)
-        case_id = np.concatenate(case_id_lst)
-        result = [{"case_id": idc, "pred": prediction} for idc, prediction in zip(case_id, preds)]
-        return result
+@dataclass
+class DataInferenceArguments:
+    data_path: Optional[str] = field(
+        default="output/test_data.json", 
+        metadata={"help": "Path to data"}
+    )
+
+    out_path: Optional[str] = field(
+        default=None,
+        metadata={"help": "Path to save prediction"}
+    )
+
+
+def inference(
+    data_path:str, 
+    config_path:str,
+    out_path:str=None,
+    model_name_or_path:str="UnetRes_v2",
+    pretrained_path:str="output/models/best_model_1803_softmax.pt",
+    freeze_feature: bool=False,  
+    num_classes:int=3,
+    act_func:str="softmax"
+):
+    if not os.path.exists(out_path):
+        os.makedirs(out_path)
+
+    if not os.path.exists("predictions"):
+        os.makedirs("predictions")
+    
+    configs = read_yaml_file(config_path)
+    data = load_json_file(data_path)["data"]
+    model = get_model(
+        model=model_maps[model_name_or_path],
+        pretrained_path=pretrained_path,
+        freeze_feature=freeze_feature,
+        num_classes=num_classes,
+        act=act_func,
+    ) 
+
+    inference = Inference(model=model, data=data, configs=configs["create_dataset"])
+    prediction = inference.create()
+    
+    case_id = [item["case_id"].split("_")[1] for item in prediction]
+    npy_pred_path = [out_path + f"/prediction_{idc}.nii.gz.npy" for idc in case_id]
+    nii_pred_path = [f"predictions/prediction_{idc}.nii.gz" for idc in case_id]
+
+    npy_msk_pred = [item["pred"] for item in prediction]
+    
+    assert len(case_id) == len(npy_msk_pred), f"len{len(case_id)} and len{len(npy_msk_pred)}"
+
+    [np.save(path, seg) for path, seg in zip(npy_pred_path, npy_msk_pred)]
+    [item.update({"npy_seg_path": npy_pred_path[idc]}) for idc, item in enumerate(data)]
+
+    postprocess = Postprocess3D(configs=configs["preprocess"], prediction=data)
+    nii_msk_pred, case_id = postprocess.create()
+
+    [nib.save(nii_pred, path) for nii_pred, path in zip(nii_msk_pred, nii_pred_path)]
+    [item.update({"nii_seg_path": nii_pred_path[idc]}) for idc, item in enumerate(data)]
+
+    write_json_file({"data": data}, "output/test_data_update.json")
+    logger.info(f"The number of test dataset is {len(nii_msk_pred)}")
+    logger.info(f"Saved test dataset at {out_path}")
+
+def main():
+    parser = HfArgumentParser((ModelArguments, DataInferenceArguments))
+    model_args, data_infer_args = parser.parse_args_into_dataclasses()
+    
+    inference(
+        data_path=data_infer_args.data_path, 
+        out_path=data_infer_args.out_path,
+        model_name_or_path=model_args.model_name_or_path,
+        config_path=model_args.config_path,
+        pretrained_path=model_args.cache_dir,
+        freeze_feature=model_args.freeze_feature,  
+        num_classes=model_args.num_classes,
+        act_func=model_args.act_func
+    )
+
+
+if __name__ == "__main__":
+    main()

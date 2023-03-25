@@ -1,6 +1,6 @@
 import os
 from random import random
-from typing import List
+from typing import List, Optional
 
 import nibabel as nib
 import numpy as np
@@ -8,18 +8,19 @@ import pandas as pd
 from sklearn.model_selection import KFold
 
 from ...utils.utils import multiprocess
-from ..augs import aug_maps as AUG_MAPS
+from ..augs import aug_maps 
 from .base_preprocess import BasePreprocess3D
+from ..data_readers.data_reader import DatasetReader
 
 class Preprocess3D(BasePreprocess3D):
     def __init__(
         self,
         data: List[dict],
         crop_size: int = 256,
-        save_file_path: str = None,
         vol_path: str = None,
-        seg_path: str = None,
+        seg_path: Optional[str]=None,
         configs: str = None,
+        dataset_configs: str=None,
     ):
         self.data = data
         self.crop_size = crop_size
@@ -28,6 +29,8 @@ class Preprocess3D(BasePreprocess3D):
         self.configs = configs
 
         super().__init__(data=data, vol_path=vol_path, seg_path=seg_path)
+
+        self.dataset_reader = DatasetReader(df=None, augs=None, phase="train", **dataset_configs)
 
     def create_one_item(self, item: dict) -> dict:
         case_id = item["case_id"]
@@ -50,10 +53,10 @@ class Preprocess3D(BasePreprocess3D):
             msk, np.diag(abs(msk_affine)), self.configs["target_spacing"], order=0
         )
 
-        cropped_vol = AUG_MAPS["crop_and_pad_if_needed"](
+        cropped_vol = aug_maps["crop_and_pad_if_needed"](
             new_vol, axes=(1, 2), crop_size=self.crop_size
         )
-        cropped_msk = AUG_MAPS["crop_and_pad_if_needed"](
+        cropped_msk = aug_maps["crop_and_pad_if_needed"](
             new_msk, axes=(1, 2), crop_size=self.crop_size
         )
 
@@ -71,9 +74,8 @@ class Preprocess3D(BasePreprocess3D):
         vol = vol.get_fdata()
 
         vol = np.clip(vol, self.configs["lower_bound"], self.configs["upper_bound"])
-        vol = self.drop_invalid_range(volume=vol, label=None)
-
+        # vol = self.drop_invalid_range(volume=vol, label=None)
         new_vol = self.resample(vol, np.diag(abs(vol_affine)), self.configs["target_spacing"], order=3)
-        cropped_vol = AUG_MAPS["crop_and_pad_if_needed"](new_vol, axes=(1, 2), crop_size=self.crop_size)
-     
+        cropped_vol = aug_maps["crop_and_pad_if_needed"](new_vol, axes=(1, 2), crop_size=self.crop_size)
         return {"case_id": case_id, "vol": cropped_vol}
+        

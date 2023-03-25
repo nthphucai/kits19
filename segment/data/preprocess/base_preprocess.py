@@ -26,8 +26,10 @@ class BasePreprocess3D(ABC):
         self.vol_path = vol_path
         self.seg_path = seg_path
 
-        if not os.path.exists(vol_path) or not os.path.exists(seg_path):
+        if (vol_path is not None) and os.path.exists(vol_path):
             os.makedirs(vol_path)
+
+        if (seg_path is not None) and os.path.exists(seg_path):
             os.makedirs(seg_path)
 
     def run(self) -> list:
