@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
 
 import torch
 import torch.nn as nn
@@ -36,7 +36,7 @@ class BaseTrainer(ABC):
         loss = self.loss(preds, targets)
         return loss, preds
 
-    def train_one_epoch(self, epoch: int, callbacks: list):
+    def train_one_epoch(self, epoch: int, callbacks=()):
         total_loss = 0.0
 
         self.optimizer.zero_grad()

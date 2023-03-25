@@ -6,7 +6,6 @@ import torch
 import torch.multiprocessing as mp
 from tqdm.auto import tqdm
 
-
 def get_progress(iterable=None, total=None, desc=None, disable=False):
     """
     get progress bar
@@ -16,13 +15,6 @@ def get_progress(iterable=None, total=None, desc=None, disable=False):
     :return: progress bar
     """
     return tqdm(iterable=iterable, total=total, desc=desc, disable=disable)
-
-
-"""
-Ex: calculate_dice(idx, df, axis, return_df=False)
-mutiprocess(calculate_dice, range(len(pairs)), df=pairs, return_df=True)
-"""
-
 
 def multiprocess(
     iter_func,
@@ -42,6 +34,9 @@ def multiprocess(
     :param batch_size: chunk size
     :param use_index: whether to add index to each call of iter func
     :return list of result if not all is None
+
+    Ex: calculate_dice(idx, df, axis, return_df=False)
+    mutiprocess(calculate_dice, range(len(pairs)), df=pairs, return_df=True)
     """
     n = len(arr)
     n_chunk = n // batch_size
@@ -78,13 +73,10 @@ def multiprocess(
     if not all([r is None for r in final_results]):
         return final_results
 
-
-"""
-set gpu_ids for training, ids start from 0
-"""
-
-
 def set_gpu(*gpu_ids):
+    """
+    set gpu_ids for training, ids start from 0
+    """
     assert len(gpu_ids) > 0, "require at least 1 is=d"
     os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(id) for id in gpu_ids])
     # print(','.join([str(id) for id in gpu_ids]))

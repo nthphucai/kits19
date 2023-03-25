@@ -22,7 +22,7 @@ def get_model(model, pretrained_path, freeze_feature, num_classes=2, act="sigmoi
     if pretrained_path is not None:
         cp = torch.load(pretrained_path)
         model.load_state_dict(cp["model_state_dict"])
-        print(pretrained_path)
-        print(sum(p.numel() for p in model.parameters()))
+        print("pretrained_path:", pretrained_path)
+        print("num param:", sum(p.numel() for p in model.parameters()))
 
     return model
