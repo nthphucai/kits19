@@ -1,20 +1,18 @@
 import json
 from typing import Optional, Union
 
-import numpy as np
 import torch
 import torch.nn as nn
+import numpy as np
 from torch.utils.data import Dataset
 
 from ...models import model_maps
-from ...training.callbacks import callback_maps
 from ...training.losses import loss_maps
 from ...training.metrics import metric_maps
+from ...training.callbacks import callback_maps
 from ...training.optimizers import optimizer_maps
 from ...training.schedulers import scheduler_maps
 from ...training.trainer.standard_trainer import Trainer
-from ...utils import parameter as para
-from ...utils.file_utils import logger
 from ...data.data_loaders.processor import DataProcessor
 
 
@@ -28,7 +26,7 @@ class ConfigTrainer:
         save_config_path: str = None,
         verbose: bool = False,
         num_train_epochs: int = 2,
-        output_dir: Optional[str] = None,
+        out_dir: str = None,
         log_dir: str = None,
         fp16: bool = False,
         do_train: bool = True,
@@ -45,7 +43,7 @@ class ConfigTrainer:
         model_config = config.get("model", []) if model is None else None
 
         self.num_train_epochs = num_train_epochs
-        self.output_dir = output_dir
+        self.out_dir = out_dir
         self.log_dir = log_dir
         self.fp16 = fp16
 
@@ -70,6 +68,7 @@ class ConfigTrainer:
         print("metrics: ", self.metrics) if verbose else None
 
         self.optimizer = self._get_optimizer(opt_config=opt_config)
+        self.optimizer = optimizer_maps["look_ahead"](self.optimizer, k=5, alpha=0.5) 
         print("optimizer: ", self.optimizer) if verbose else None
 
         self.scheduler = None
@@ -108,7 +107,7 @@ class ConfigTrainer:
         name = loss_config["name"]
         kwargs = self.get_kwargs(loss_config, ["name", "class_weight"])
         class_weight = np.load(loss_config["class_weight"])
-        print("class_weight:", class_weight)
+        print("class_weight:", np.unique(class_weight))
         loss = loss_maps[name](class_weight=class_weight, **kwargs)
         return loss
 
@@ -156,7 +155,7 @@ class ConfigTrainer:
             scheduler=self.scheduler,
             metric=self.metrics,
             num_train_epochs=self.num_train_epochs,
-            output_dir=self.output_dir,
+            out_dir=self.out_dir,
             log_dir=self.log_dir,
             fp16=self.fp16,
         )

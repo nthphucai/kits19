@@ -3,6 +3,7 @@ from typing import List, Optional
 
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 
 from ...utils.utils import get_progress
 
@@ -11,8 +12,8 @@ class BaseTrainer(ABC):
     def __init__(
         self,
         model: nn.Module,
-        train_data,
-        val_data,
+        train_data: DataLoader,
+        val_data: DataLoader,
         loss: nn.Module,
         optimizer: nn.Module,
         scheduler: nn.Module,

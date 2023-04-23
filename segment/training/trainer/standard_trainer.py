@@ -1,30 +1,28 @@
-import os
-from pathlib import Path
-from typing import Iterable, List, Optional
+from typing import List, Union, Optional
 
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 
-from segment.training.callbacks.clr import LrFinder
-
-from ..callbacks.utils import plot_df, save_logs, save_model
-from .base_trainer import BaseTrainer
 from .utils import get_dict
+from ..callbacks.utils import save_logs
+from ..callbacks import callback_maps
+from .base_trainer import BaseTrainer
 
 
 class Trainer(BaseTrainer):
     def __init__(
         self,
-        train_data: Iterable,
-        val_data: Iterable,
+        train_data: DataLoader,
+        val_data: DataLoader,
         model: nn.Module,
         loss: nn.Module,
         optimizer: nn.Module,
         scheduler: Optional[nn.Module],
         metric: nn.Module,
         num_train_epochs: int,
-        output_dir: str,
-        log_dir: str,
+        out_dir: str = None,
+        log_dir: str = None,
         fp16: bool = False,
     ):
         super().__init__(
@@ -38,16 +36,16 @@ class Trainer(BaseTrainer):
         self.scheduler = scheduler
         self.score = metric
 
-        self.save_model = save_model
-        self.output_dir = output_dir
+        self.out_dir = out_dir
         self.log_dir = log_dir
+        self.fp16 = fp16
 
         self.best_loss = float("inf")
         self.num_train_epochs = num_train_epochs
 
         self.scaler = torch.cuda.amp.GradScaler()
         self.gradient_accumulation = 1
-
+        
     def train_mini_batch(self):
         self.model.train()
         imgs, targets = next(iter(self.dl_train))
@@ -55,12 +53,12 @@ class Trainer(BaseTrainer):
             loss, _ = self._train_one_batch(iter, imgs, targets)
             print("loss:", loss.item())
 
-    def _train_one_batch(self, iter, imgs, targets):
-        if torch.cuda.is_available():
+    def _train_one_batch(self, step, imgs, targets):
+        if self.fp16:
             with torch.cuda.amp.autocast():
                 loss, preds = self.loss_and_output(imgs, targets)
                 self.scaler.scale(loss).backward()
-                if (iter + 1) % self.gradient_accumulation == 0:
+                if (step + 1) % self.gradient_accumulation == 0:
                     self.scaler.step(self.opt)
                     self.scaler.update()
                     self.opt.zero_grad()
@@ -68,15 +66,22 @@ class Trainer(BaseTrainer):
             loss, preds = self.loss_and_output(imgs, targets)
             self.opt.zero_grad()
             loss.backward()
-            self.opt.step()
+            if (step + 1) % self.gradient_accumulation == 0:
+              self.opt.step()
+              self.opt.zero_grad()
         return loss, preds
 
     def _eval_one_batch(self, imgs, targets):
         loss, preds = self.loss_and_output(imgs, targets)
         return loss, preds
 
-    def run(self, mode=("train", "eval"), callbacks=None):
-        callbacks = callbacks or []
+    def run(self, mode=("train", "eval"), callbacks: Union[tuple, list]=None):
+        if self.out_dir is not None:
+            monitor = "val loss" if "eval" in mode else "train loss"
+            model_cp = callback_maps["checkpoint"](file_path=self.out_dir, monitor=monitor)
+            callbacks = callbacks + [model_cp] 
+        else: 
+            callbacks = callbacks + [] 
 
         [c.set_trainer(self) for c in callbacks]
 
@@ -89,37 +94,30 @@ class Trainer(BaseTrainer):
 
         for e in range(self.num_train_epochs):
             print("\nepoch", f"{e}/{self.num_train_epochs}")
-            for _ in mode:
-                [c.on_epoch_begin(e) for c in callbacks]
-                loss, dsc_batch, dsc_organ, dsc_tumor = self.train_one_epoch(
-                    e, callbacks=callbacks
-                )
-                if self.scheduler:
-                    self.scheduler.step(loss) if "eval" not in mode else None
+            for m in mode:
+                if m == "train":
+                  [c.on_epoch_begin(e) for c in callbacks]
+                  loss, dsc_batch, dsc_organ, dsc_tumor = self.train_one_epoch(
+                      e, callbacks=callbacks
+                  )
 
-                logs = get_dict(
-                    names=["train loss", "dsc", "dsc_organ", "dsc_tumor"],
-                    values=[loss, dsc_batch, dsc_organ, dsc_tumor],
-                    display=True,
-                )
+                  logs = get_dict(
+                      names=["train loss", "dsc", "dsc_organ", "dsc_tumor"],
+                      values=[loss, dsc_batch, dsc_organ, dsc_tumor],
+                      display=True,
+                  )
 
-                if "eval" in mode:
+                if m == "eval":
                     loss, dsc_batch, dsc_organ, dsc_tumor = self.val_one_epoch(e)
                     self.scheduler.step(loss) if self.scheduler else None
                     logs_ = get_dict(
-                        names=["val loss", "dsc_batch", "dsc_organ", "dsc_tumor"],
+                        names=["val loss", "dsc", "dsc_organ", "dsc_tumor"],
                         values=[loss, dsc_batch, dsc_organ, dsc_tumor],
                         display=True,
                     )
                     logs.update(logs_)
-
-                if self.output_dir is not None:
-                    if (e > 1) and (loss < self.best_loss):
-                        self.best_loss = loss
-                        save_model(loss, e, self.model, self.opt, self.output_dir)
-
-                    if self.log_dir is not None:
-                        _, filename = save_logs(e, logs, self.log_dir)
+                                    
+                save_logs(e, logs, self.log_dir) if self.log_dir is not None else None
 
             [c.on_epoch_end(e, logs) for c in callbacks]
 
