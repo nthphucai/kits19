@@ -42,7 +42,7 @@ def prepare_test_data(data_path:str, config_path:str, vol_path:str, out_path:str
     preprocessed_vol_path = [os.path.join(vol_path, f"case_00{num}_imaging.nii.gz") for num in range(210, 300)]
 
     test_df = pd.DataFrame({"case_id": case_id, "img_path": imaging_path})
-    data_dict = test_df.to_dict(orient="records")[:10]
+    data_dict = test_df.to_dict(orient="records")
 
     preprocess = Preprocess3D(
         data=data_dict,
@@ -57,7 +57,7 @@ def prepare_test_data(data_path:str, config_path:str, vol_path:str, out_path:str
 
     result = [{"case_id": id_, "vol_path": vol_path, "new_vol_path": new_vol_path + ".npy"} \
           for id_, vol_path, new_vol_path in zip(case_id, imaging_path, preprocessed_vol_path)]
-    
+            
     write_json_file({"data": result}, out_path)
     logger.info("Save preprocessed test data at %s", out_path)
 

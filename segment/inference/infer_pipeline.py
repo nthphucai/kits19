@@ -57,12 +57,17 @@ class DataInferenceArguments:
         default=None,
         metadata={"help": "Path to save prediction"}
     )
-
+    
+    pred_path: Optional[str] = field(
+        default="output/predictions.json",
+        metadata={"help": "Path to prediction file"},
+    )
 
 def inference(
     data_path:str, 
     config_path:str,
     out_path:str=None,
+    pred_path:str=None,
     model_name_or_path:str="UnetRes_v2",
     pretrained_path:str="output/models/best_model_1803_softmax.pt",
     freeze_feature: bool=False,  
@@ -98,14 +103,14 @@ def inference(
 
     [np.save(path, seg) for path, seg in zip(npy_pred_path, npy_msk_pred)]
     [item.update({"npy_seg_path": npy_pred_path[idc]}) for idc, item in enumerate(data)]
-
-    postprocess = Postprocess3D(configs=configs["preprocess"], prediction=data)
+    
+    postprocess = Postprocess3D(configs=configs["preprocess"], data=data)
     nii_msk_pred, case_id = postprocess.create()
 
     [nib.save(nii_pred, path) for nii_pred, path in zip(nii_msk_pred, nii_pred_path)]
     [item.update({"nii_seg_path": nii_pred_path[idc]}) for idc, item in enumerate(data)]
 
-    write_json_file({"data": data}, "output/test_data_update.json")
+    write_json_file({"data": data}, pred_path)
     logger.info(f"The number of test dataset is {len(nii_msk_pred)}")
     logger.info(f"Saved test dataset at {out_path}")
 
@@ -116,6 +121,7 @@ def main():
     inference(
         data_path=data_infer_args.data_path, 
         out_path=data_infer_args.out_path,
+        pred_path=data_infer_args.pred_path,
         model_name_or_path=model_args.model_name_or_path,
         config_path=model_args.config_path,
         pretrained_path=model_args.cache_dir,
