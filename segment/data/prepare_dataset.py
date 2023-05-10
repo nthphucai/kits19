@@ -5,11 +5,12 @@ from typing import Optional, Union
 import pandas as pd
 import torch
 
+from sklearn.model_selection import train_test_split
+
 from segment.data.augs import aug_maps
 from segment.data.data_readers.data_reader import DatasetReader
 from segment.utils.file_utils import load_json_file, logger, read_yaml_file
 from segment.utils.hf_argparser import HfArgumentParser
-
 
 @dataclass
 class DataTrainingArguments:
@@ -62,8 +63,11 @@ def get_dataset(
     
     df = pd.DataFrame(data)
     logger.info(f"The number of data at {df.shape[0]}")
-    train_df = df.loc[df["fold"] != fold].reset_index(drop=True)
-    valid_df = df.loc[df["fold"] == fold].reset_index(drop=True)
+    if fold is not None:
+      train_df = df.loc[df["fold"] != fold].reset_index(drop=True)
+      valid_df = df.loc[df["fold"] == fold].reset_index(drop=True)
+    else:
+      train_df, valid_df = train_test_split(df, test_size=0.2)
 
     train_ds = DatasetReader(df=train_df, augs=aug_maps["transforms"], phase="train", **config)
     valid_ds = DatasetReader(df=valid_df, augs=None, phase="valid", **config)
