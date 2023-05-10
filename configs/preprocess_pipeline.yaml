@@ -5,7 +5,7 @@ preprocess:
   lower_bound: -79
   upper_bound: 304
   expand_slice: 20
-  target_spacing: [3, 1.5, 1.5]
+  target_spacing: [3.0, 1.5, 1.5]
   mean: 101
   std: 76.9
   vol_min: -122.0
@@ -13,7 +13,7 @@ preprocess:
   size: 48
 
 create_dataset:
-  input_size: [80, 80, 160]
+  input_size: [80, 160, 160]
   expand_slice_z: 30
   expand_slice_y: 15
   expand_slice_x: 15
