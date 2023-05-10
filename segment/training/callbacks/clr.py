@@ -50,13 +50,9 @@ class LrFinder(Callback):
     def on_train_end(self):
         self.plot_data()
 
-    # def get_data(self, group=0, target="Loss"):
-    #     for lr, logs in self.history[group]:
-    #         yield lr, logs[target]
-
     def get_data(self, group=0, target="Loss"):
-        for lr, logs in self.history[0]:
-            yield lr, logs
+        for lr, logs in self.history[group]:
+            yield lr, logs[target]
 
     def plot_data(self, group=0, target="Loss"):
         lrs, targets = zip(*self.get_data(group, target))
