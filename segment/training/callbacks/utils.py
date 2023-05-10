@@ -18,7 +18,7 @@ def save_logs(epoch, logs, log_path):
 
     def handle_value(k):
         is_zero_dim_ndarray = isinstance(k, np.ndarray) and k.ndim == 0
-        if isinstance(k, collections.Iterable) and not is_zero_dim_ndarray:
+        if isinstance(k, collections.abc.Iterable) and not is_zero_dim_ndarray:
             return '"[%s]"' % (", ".join(map(str, k)))
         else:
             return k
