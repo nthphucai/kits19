@@ -7,11 +7,11 @@ import torch
 import numpy as np
 import pandas as pd
 
-from segment.data.data_loaders.processor import DataProcessor
 from segment.models import model_maps
 from segment.models.segment import get_model
-from segment.training.trainer.config_trainer import ConfigTrainer
 from segment.utils.file_utils import logger, read_yaml_file
+from segment.data.data_loaders.processor import DataProcessor
+from segment.training.trainer.config_trainer import ConfigTrainer
 from segment.utils.hf_argparser import HfArgumentParser
 
 
@@ -100,15 +100,12 @@ def runner(
     freeze_feature: bool = False,
     act_func: str = "sigmoid",
     num_train_epochs: str = 2,
-    output_dir: str = None,
+    out_dir: str = None,
     log_dir: str = None,
     fp16: bool = False,
     do_train: bool=True,
     do_eval: bool=False
 ):
-
-    if not os.path.exists(os.path.dirname(output_dir)):
-        os.makedirs(os.path.dirname(output_dir))
 
     if not os.path.exists(os.path.dirname(log_dir)):
         os.makedirs(os.path.dirname(log_dir))
@@ -143,7 +140,7 @@ def runner(
         save_config_path=None,
         verbose=False,
         num_train_epochs=num_train_epochs,
-        output_dir=output_dir,
+        out_dir = out_dir,
         log_dir=log_dir,
         fp16=fp16,
         do_train=do_train,
@@ -152,7 +149,6 @@ def runner(
     trainer.train()
 
     logger.info("Save logs at directory: %s", log_dir)
-    logger.info("Save model at directory: %s", output_dir)
     logger.info("Save class weight at directory %s", class_weight_path)
 
 
@@ -168,7 +164,7 @@ def main():
         class_weight_path=data_args.class_weight_path,
         config_dir=model_args.config_dir,
         model_name_or_path=model_args.model_name_or_path,
-        output_dir=model_args.output_dir,
+        out_dir=model_args.output_dir,
         cache_dir=model_args.cache_dir,
         freeze_feature=model_args.freeze_feature,
         act_func=model_args.act_func,
@@ -181,3 +177,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    

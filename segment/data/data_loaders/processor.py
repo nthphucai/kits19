@@ -3,9 +3,7 @@ import numpy as np
 import torch.nn as nn
 from torch.utils.data import (DataLoader, Dataset, RandomSampler,
                               SequentialSampler)
-
-from ..data_readers.data_reader import DatasetReader
-
+                              
 
 class DataProcessor:
     def __init__(self, 

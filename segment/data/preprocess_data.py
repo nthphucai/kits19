@@ -66,7 +66,7 @@ def preprocess_volume(
         logger.info("csv file save at %s", save_path)
         data.to_csv(save_path)
 
-    data_dict = data.to_dict(orient="records")[:10]
+    data_dict = data.to_dict(orient="records")
     configs = read_yaml_file(config_path)["preprocess"]
 
     preprocess = Preprocess3D(
@@ -76,7 +76,6 @@ def preprocess_volume(
         configs=configs,
     )
     result = preprocess.run()
-    # result = preprocess.to_dict()
 
     if split_kfold is not None:
         result = split_data(data=result, n_split=split_kfold)

@@ -20,7 +20,6 @@ class Preprocess3D(BasePreprocess3D):
         vol_path: str = None,
         seg_path: Optional[str]=None,
         configs: str = None,
-        dataset_configs: str=None,
     ):
         self.data = data
         self.crop_size = crop_size
@@ -29,8 +28,6 @@ class Preprocess3D(BasePreprocess3D):
         self.configs = configs
 
         super().__init__(data=data, vol_path=vol_path, seg_path=seg_path)
-
-        self.dataset_reader = DatasetReader(df=None, augs=None, phase="train", **dataset_configs)
 
     def create_one_item(self, item: dict) -> dict:
         case_id = item["case_id"]
@@ -74,7 +71,6 @@ class Preprocess3D(BasePreprocess3D):
         vol = vol.get_fdata()
 
         vol = np.clip(vol, self.configs["lower_bound"], self.configs["upper_bound"])
-        # vol = self.drop_invalid_range(volume=vol, label=None)
         new_vol = self.resample(vol, np.diag(abs(vol_affine)), self.configs["target_spacing"], order=3)
         cropped_vol = aug_maps["crop_and_pad_if_needed"](new_vol, axes=(1, 2), crop_size=self.crop_size)
         return {"case_id": case_id, "vol": cropped_vol}
