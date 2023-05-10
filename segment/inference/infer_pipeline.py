@@ -4,7 +4,6 @@ from typing import Optional, Union
 
 import torch
 import numpy as np
-import nibabel as nib
 
 from segment.utils.file_utils import load_json_file, write_json_file, logger, read_yaml_file
 from segment.models.segment import get_model
@@ -82,6 +81,7 @@ def inference(
     
     configs = read_yaml_file(config_path)
     data = load_json_file(data_path)["data"]
+
     model = get_model(
         model=model_maps[model_name_or_path],
         pretrained_path=pretrained_path,
@@ -106,8 +106,6 @@ def inference(
     
     postprocess = Postprocess3D(configs=configs["preprocess"], data=data)
     nii_msk_pred, case_id = postprocess.create()
-
-    [nib.save(nii_pred, path) for nii_pred, path in zip(nii_msk_pred, nii_pred_path)]
     [item.update({"nii_seg_path": nii_pred_path[idc]}) for idc, item in enumerate(data)]
 
     write_json_file({"data": data}, pred_path)

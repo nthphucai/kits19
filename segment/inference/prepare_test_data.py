@@ -47,7 +47,8 @@ def prepare_test_data(data_path:str, config_path:str, vol_path:str, out_path:str
     preprocess = Preprocess3D(
         data=data_dict,
         configs=preprocess_configs,
-        dataset_configs=dataset_configs,
+        vol_path=vol_path,
+        seg_path=out_path,
     )
 
     preprocessed_test_data = list(map(preprocess.create_one_test_item, get_progress(data_dict)))
