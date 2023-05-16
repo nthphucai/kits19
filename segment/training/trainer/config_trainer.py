@@ -1,19 +1,18 @@
 import json
-from typing import Optional, Union
+from typing import Optional
 
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
-from torch.utils.data import Dataset
+from torch.utils.data import (DataLoader, Dataset, RandomSampler,
+                              SequentialSampler)
 
 from ...models import model_maps
+from ...training.callbacks import callback_maps
 from ...training.losses import loss_maps
 from ...training.metrics import metric_maps
-from ...training.callbacks import callback_maps
 from ...training.optimizers import optimizer_maps
-from ...training.schedulers import scheduler_maps
 from ...training.trainer.standard_trainer import Trainer
-from ...data.data_loaders.processor import DataProcessor
 
 
 class ConfigTrainer:
@@ -30,7 +29,9 @@ class ConfigTrainer:
         log_dir: str = None,
         fp16: bool = False,
         do_train: bool = True,
-        do_eval: bool = False, 
+        do_eval: bool = False,
+        per_device_train_batch_size: int = 2,
+        per_device_eval_batch_size: int = 2,
     ):
         self.config = config
         self.save_config_path = save_config_path
@@ -39,7 +40,6 @@ class ConfigTrainer:
         metrics_configs = config.get("metric", [])
         opt_config = config["optimizer"]
         callbacks_configs = config.get("callbacks", [])
-        scheduler_configs = config.get("schedulers", [])
         model_config = config.get("model", []) if model is None else None
 
         self.num_train_epochs = num_train_epochs
@@ -48,7 +48,18 @@ class ConfigTrainer:
         self.fp16 = fp16
 
         print("creating train, valid loader") if verbose else None
-        self.dl_train, self.dl_valid = self._get_dataloader(train_dataset, valid_dataset)
+        dl_configs = {
+            "train_batch_size": per_device_train_batch_size,
+            "eval_batch_size": per_device_eval_batch_size,
+        }
+        self.dl_train = self.get_train_dataloader(train_dataset, **dl_configs)
+        self.dl_valid = (
+            self.get_eval_dataloader(valid_dataset, **dl_configs)
+            if valid_dataset is not None
+            else None
+        )
+        minibatch = next(iter(self.dl_train))
+        print("data shape:", minibatch[0].shape)
 
         print("creating model") if verbose else None
         self.model = self._get_model(model_config) if model is None else model
@@ -68,25 +79,51 @@ class ConfigTrainer:
         print("metrics: ", self.metrics) if verbose else None
 
         self.optimizer = self._get_optimizer(opt_config=opt_config)
-        self.optimizer = optimizer_maps["look_ahead"](self.optimizer, k=5, alpha=0.5) 
+        self.optimizer = optimizer_maps["look_ahead"](self.optimizer, k=5, alpha=0.5)
         print("optimizer: ", self.optimizer) if verbose else None
 
         self.scheduler = None
-        print("optimizer: ", self.scheduler) if verbose else None
 
         self.callbacks = self._get_callbacks(callbacks_configs)
         print("callbacks: ", self.callbacks) if verbose else None
 
-        self.mode = ("train", "eval") if do_eval and do_train else ("train", )
+        self.mode = ("train", "eval") if do_eval and do_train else ("train",)
 
-    def _get_dataloader(self, train_dataset, valid_dataset):
-        processor = DataProcessor(batch_size=4, workers=2)
-        train_dataloaders = processor.get_dloader(train_dataset) 
-        valid_dataloaders = processor.get_dloader(valid_dataset) if valid_dataset is not None else None
+    def get_train_dataloader(self, dataset, **kwargs) -> DataLoader:
+        shuffle = kwargs.get("shuffle", True)
+        workers = kwargs.get("workers", True)
+        pin_memory = kwargs.get("pin_memory", True)
+        drop_last = kwargs.get("drop_last", True)
+        batch_size = kwargs.get("train_batch_size", 2)
 
-        minibatch = next(iter(train_dataloaders))
-        print("data shape:", minibatch[0].shape)
-        return train_dataloaders, valid_dataloaders
+        sampler = RandomSampler(dataset) if shuffle else SequentialSampler(dataset)
+
+        return DataLoader(
+            dataset=dataset,
+            batch_size=batch_size,
+            sampler=sampler,
+            num_workers=workers,
+            pin_memory=pin_memory,
+            drop_last=drop_last,
+        )
+
+    def get_eval_dataloader(self, dataset, **kwargs) -> DataLoader:
+        shuffle = kwargs.get("shuffle", False)
+        workers = kwargs.get("workers", True)
+        pin_memory = kwargs.get("pin_memory", True)
+        drop_last = kwargs.get("drop_last", True)
+        batch_size = kwargs.get("eval_batch_size", 2)
+
+        sampler = RandomSampler(dataset) if shuffle else SequentialSampler(dataset)
+
+        return DataLoader(
+            dataset=dataset,
+            batch_size=batch_size,
+            sampler=sampler,
+            num_workers=workers,
+            pin_memory=pin_memory,
+            drop_last=drop_last,
+        )
 
     def _get_model(self, model_config):
         name = model_config["path"]
