@@ -38,7 +38,7 @@ class DataTrainingArguments:
 
     config_path: Optional[str] = field(
         default=None,
-        metadata={"help": "Path for config file"},
+        metadata={"help": "Path for config file directory"},
     )
 
     split_kfold: Optional[int] = field(
