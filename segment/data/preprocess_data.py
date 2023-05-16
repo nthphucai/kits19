@@ -1,46 +1,44 @@
-import glob
 import os
 import pathlib
 from dataclasses import dataclass, field
 from typing import Optional
 
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
 from segment.data import create_df
-from segment.data.preprocess.standard_preprocess import Preprocess3D
 from segment.data.utils import split_data
-from segment.utils.file_utils import (load_json_file, logger, read_yaml_file,
-                                      write_json_file)
+from segment.utils.file_utils import logger, read_yaml_file, write_json_file
 from segment.utils.hf_argparser import HfArgumentParser
+from segment.data.preprocess.standard_preprocess import Preprocess3D
 
 
 @dataclass
 class DataTrainingArguments:
     data_path: Optional[str] = field(
         default=None,
-        metadata={"help": "Path to data from ..."},
+        metadata={"help": "Path for data directory"},
     )
 
     train_vol_path: Optional[str] = field(
         default=None,
-        metadata={"help": "Path to train volume from ..."},
+        metadata={"help": "Path for train volume data directory"},
     )
 
     train_seg_path: Optional[str] = field(
         default=None,
-        metadata={"help": "Path to train seg from ..."},
+        metadata={"help": "Path for train segmentation data directory"},
     )
 
     save_file_path: Optional[str] = field(
         default=None,
-        metadata={"help": "Path to file path from ..."},
+        metadata={
+            "help": "The output directory where the processed data will be saved."
+        },
     )
 
     config_path: Optional[str] = field(
         default=None,
-        metadata={"help": "Path to config file from ..."},
+        metadata={"help": "Path for config file"},
     )
 
     split_kfold: Optional[int] = field(
@@ -48,15 +46,15 @@ class DataTrainingArguments:
         metadata={"help": "Whether to use kfold"},
     )
 
+
 def preprocess_volume(
-      data_path: str,
-      config_path: str,
-      train_vol_path: str,
-      train_seg_path: str,
-      save_file_path: str,
-      split_kfold: Optional[int]=None,
-    ):
-      
+    data_path: str,
+    config_path: str,
+    train_vol_path: str,
+    train_seg_path: str,
+    save_file_path: str,
+    split_kfold: Optional[int] = None,
+):
     if ".csv" in pathlib.Path(data_path).suffix:
         columns = ["case_id", "img_path", "seg_path"]
         data = pd.read_csv(data_path)[columns]
@@ -83,18 +81,18 @@ def preprocess_volume(
     write_json_file({"data": result}, save_file_path)
     logger.info("data path save at %s", save_file_path)
 
+
 def main():
     parser = HfArgumentParser(DataTrainingArguments)
     data_args = parser.parse_args_into_dataclasses()[0]
 
     preprocess_volume(
-      data_path=data_args.data_path,
-      config_path=data_args.config_path,
-      train_vol_path=data_args.train_vol_path,
-      train_seg_path=data_args.train_seg_path,
-      save_file_path=data_args.save_file_path,
-      split_kfold=data_args.split_kfold,
-
+        data_path=data_args.data_path,
+        config_path=data_args.config_path,
+        train_vol_path=data_args.train_vol_path,
+        train_seg_path=data_args.train_seg_path,
+        save_file_path=data_args.save_file_path,
+        split_kfold=data_args.split_kfold,
     )
 
 
