@@ -1,34 +1,28 @@
 import os
-import datetime
 from dataclasses import dataclass, field
 from typing import Optional
 
 import torch
 import numpy as np
-import pandas as pd
 
 from segment.models import model_maps
 from segment.models.segment import get_model
 from segment.utils.file_utils import logger, read_yaml_file
-from segment.data.data_loaders.processor import DataProcessor
 from segment.training.trainer.config_trainer import ConfigTrainer
 from segment.utils.hf_argparser import HfArgumentParser
 
 
 @dataclass
 class ModelArguments:
-    """
-    Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
-    """
 
     model_name_or_path: Optional[str] = field(
         default=None,
-        metadata={"help": "Path to pretrained model or model identifier from ..."},
+        metadata={"help": "Path for pretrained model or model"},
     )
 
     cache_dir: Optional[str] = field(
         default=None,
-        metadata={"help": "Where do you want to store the pretrained models"},
+        metadata={"help": "Where do you want to load the pretrained models"},
     )
 
     output_dir: Optional[str] = field(
@@ -38,7 +32,7 @@ class ModelArguments:
 
     config_dir: Optional[str] = field(
         default="configs/segment_pipeline.yaml",
-        metadata={"help": "Path to config file"},
+        metadata={"help": "Path for config file directory"},
     )
 
     freeze_feature: Optional[bool] = field(
@@ -47,7 +41,7 @@ class ModelArguments:
     )
 
     act_func: Optional[str] = field(
-        default="softmax", metadata={"help": "activate function"}
+        default="softmax", metadata={"help": "activate function type"}
     )
 
 
@@ -89,6 +83,13 @@ class TrainingArguments:
         metadata={"help": "Whether to eval model"},
     )
 
+    per_device_train_batch_size: int = field(
+        default=2, metadata={"help": "Batch size per GPU/TPU core/CPU for training."}
+    )
+    per_device_eval_batch_size: int = field(
+        default=2, metadata={"help": "Batch size per GPU/TPU core/CPU for evaluation."}
+    )
+
 
 def runner(
     train_dataset_path: str,
@@ -98,13 +99,14 @@ def runner(
     model_name_or_path: str,
     cache_dir: Optional[str],
     freeze_feature: bool = False,
-    act_func: str = "sigmoid",
     num_train_epochs: str = 2,
     out_dir: str = None,
     log_dir: str = None,
     fp16: bool = False,
-    do_train: bool=True,
-    do_eval: bool=False
+    do_train: bool = True,
+    do_eval: bool = False,
+    per_device_train_batch_size: int = 2,
+    per_device_eval_batch_size: int = 2,
 ):
 
     if not os.path.exists(os.path.dirname(log_dir)):
@@ -140,11 +142,13 @@ def runner(
         save_config_path=None,
         verbose=False,
         num_train_epochs=num_train_epochs,
-        out_dir = out_dir,
+        out_dir=out_dir,
         log_dir=log_dir,
         fp16=fp16,
         do_train=do_train,
-        do_eval=do_eval
+        do_eval=do_eval,
+        per_device_train_batch_size=per_device_train_batch_size,
+        per_device_eval_batch_size=per_device_eval_batch_size,
     )
     trainer.train()
 
@@ -158,6 +162,7 @@ def main():
     )
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
+    assert isinstance(model_args, object)
     runner(
         train_dataset_path=data_args.train_dataset_path,
         valid_dataset_path=data_args.valid_dataset_path,
@@ -171,8 +176,10 @@ def main():
         num_train_epochs=training_args.num_train_epochs,
         log_dir=training_args.log_dir,
         do_train=training_args.do_train,
-        do_eval=training_args.do_eval    
-)
+        do_eval=training_args.do_eval,
+        per_device_train_batch_size=training_args.per_device_train_batch_size,
+        per_device_eval_batch_size=training_args.per_device_eval_batch_size,
+    )
 
 
 if __name__ == "__main__":
