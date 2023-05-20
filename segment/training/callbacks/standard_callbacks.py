@@ -1,4 +1,5 @@
 import collections
+import copy
 import csv
 import io
 import os
@@ -8,10 +9,10 @@ import torch
 import torch.optim.lr_scheduler as schedulers
 from torch.utils.tensorboard import SummaryWriter
 
-from .base_class import Callback
+from .base_class import TrainerCallback
 
 
-class ReduceLROnPlateau(Callback):
+class ReduceLROnPlateau(TrainerCallback):
     def __init__(
         self, monitor="val loss", patience=5, mode="min", factor=0.1, verbose=1
     ):
@@ -46,7 +47,7 @@ class ReduceLROnPlateau(Callback):
         )
 
 
-class EarlyStopping(Callback):
+class EarlyStopping(TrainerCallback):
     def __init__(self, monitor="val loss", patience=10, mode="min", verbose=1):
         super().__init__()
 
@@ -85,7 +86,7 @@ class EarlyStopping(Callback):
         return f"monitor={self.monitor}, patience={self.patience}, mode={self.mode}, verbose={self.verbose}"
 
 
-class ModelCheckpoint(Callback):
+class ModelCheckpoint(TrainerCallback):
     def __init__(
         self,
         file_path,
@@ -114,20 +115,23 @@ class ModelCheckpoint(Callback):
         is_save = not self.save_best_only or is_min or is_max
 
         if is_save:
-            print("saving model to ", self.file_path) if self.verbose else None
+            print("saving model to", self.file_path) if self.verbose else None
 
             path = self.file_path
 
             if not self.overwrite:
                 path = f"{path}_{epoch}"
 
-            for i, m in enumerate(self.models):
-                model_dict = m.state_dict()
-                torch.save(model_dict, f"{path}.model_{i}")
+            model_state_dict = copy.deepcopy(self.models[0].state_dict())
+            torch.save(model_state_dict, path)
 
-            for i, opt in enumerate(self.optimizers):
-                optim_dict = opt.state_dict()
-                torch.save(optim_dict, f"{path}.opt_{i}")
+            # for i, m in enumerate(self.models):
+            #     model_dict = m.state_dict()
+            #     torch.save(model_dict, f"{path}.model_{i}")
+
+            # for i, opt in enumerate(self.optimizers):
+            #     optim_dict = opt.state_dict()
+            #     torch.save(optim_dict, f"{path}.opt_{i}")
 
             self.running_monitor_val = monitor_val
 
@@ -138,7 +142,7 @@ class ModelCheckpoint(Callback):
         )
 
 
-class CSVLogger(Callback):
+class CSVLogger(≈):
     """Callback that streams epoch results to a csv file.
 
     Supports all values that can be represented as a string,
@@ -222,7 +226,7 @@ class CSVLogger(Callback):
         return f"filename={self.filename}, separator={self.sep}, append={self.append}"
 
 
-class Tensorboard(Callback):
+class Tensorboard(TrainerCallback):
     def __init__(self, log_dir, steps=50, flushes=2, inputs=None, current_step=0):
         super().__init__()
 

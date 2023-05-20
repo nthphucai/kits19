@@ -4,10 +4,10 @@ import numpy as np
 import torch
 import torch.optim as opts
 
-from .base_class import Callback
+from .base_class import TrainerCallback
 
 
-class LrFinder(Callback):
+class LrFinder(TrainerCallback):
     def __init__(self, min_lr=1e-5, max_lr=1, epochs=1, use_plotly=False):
         """
         Callback for finding task specific learning rate
@@ -78,7 +78,7 @@ class LrFinder(Callback):
         return f"min_lr={self.min_lr}, max_lr={self.max_lr}, epochs={self.epochs}, use_plotly={self.use_plotly}"
 
 
-class WarmRestart(Callback):
+class WarmRestart(TrainerCallback):
     def __init__(
         self,
         min_lr=0,
@@ -165,7 +165,7 @@ class WarmRestart(Callback):
         )
 
 
-class SuperConvergence(Callback):
+class SuperConvergence(TrainerCallback):
     def __init__(
         self,
         epochs,
@@ -227,7 +227,7 @@ class SuperConvergence(Callback):
         )
 
 
-class Warmup(Callback):
+class Warmup(TrainerCallback):
     def __init__(self, init_lr, final_lr, n_epoch=1):
         super().__init__()
 
