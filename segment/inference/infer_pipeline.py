@@ -1,16 +1,17 @@
 import os
 from dataclasses import dataclass, field
-from typing import Optional, Union
+from typing import Optional
 
-import torch
 import numpy as np
 
-from segment.utils.file_utils import load_json_file, write_json_file, logger, read_yaml_file
-from segment.models.segment import get_model
-from segment.models import model_maps
-from segment.inference.infer import Inference
-from segment.utils.hf_argparser import HfArgumentParser
 from segment.data.postprocess import Postprocess3D
+from segment.inference.infer import Inference
+from segment.models import model_maps
+from segment.models.segment import get_model
+from segment.utils.file_utils import (load_json_file, logger, read_yaml_file,
+                                      write_json_file)
+from segment.utils.hf_argparser import HfArgumentParser
+
 
 @dataclass
 class ModelArguments:
@@ -32,7 +33,6 @@ class ModelArguments:
     num_classes: Optional[int] = field(
         default=3,
         metadata={"help": "The number of classes to be classified"},
-
     )
 
     act_func: Optional[str] = field(
@@ -48,37 +48,36 @@ class ModelArguments:
 @dataclass
 class DataInferenceArguments:
     data_path: Optional[str] = field(
-        default="output/test_data.json", 
-        metadata={"help": "Path to data"}
+        default="output/test_data.json", metadata={"help": "Path to data"}
     )
 
     out_path: Optional[str] = field(
-        default=None,
-        metadata={"help": "Path to save prediction"}
+        default=None, metadata={"help": "Path to save prediction"}
     )
-    
+
     pred_path: Optional[str] = field(
         default="output/predictions.json",
         metadata={"help": "Path to prediction file"},
     )
 
+
 def inference(
-    data_path:str, 
-    config_path:str,
-    out_path:str=None,
-    pred_path:str=None,
-    model_name_or_path:str="UnetRes_v2",
-    pretrained_path:str="output/models/best_model_1803_softmax.pt",
-    freeze_feature: bool=False,  
-    num_classes:int=3,
-    act_func:str="softmax"
+    data_path: str,
+    config_path: str,
+    out_path: str = None,
+    pred_path: str = None,
+    model_name_or_path: str = "UnetRes_v2",
+    pretrained_path: str = "output/models/best_model_1803_softmax.pt",
+    freeze_feature: bool = False,
+    num_classes: int = 3,
+    act_func: str = "softmax",
 ):
     if not os.path.exists(out_path):
         os.makedirs(out_path)
 
     if not os.path.exists("predictions"):
         os.makedirs("predictions")
-    
+
     configs = read_yaml_file(config_path)
     data = load_json_file(data_path)["data"]
 
@@ -88,22 +87,24 @@ def inference(
         freeze_feature=freeze_feature,
         num_classes=num_classes,
         act=act_func,
-    ) 
+    )
 
     inference = Inference(model=model, data=data, configs=configs["create_dataset"])
     prediction = inference.create()
-    
+
     case_id = [item["case_id"].split("_")[1] for item in prediction]
     npy_pred_path = [out_path + f"/prediction_{idc}.nii.gz.npy" for idc in case_id]
     nii_pred_path = [f"predictions/prediction_{idc}.nii.gz" for idc in case_id]
 
     npy_msk_pred = [item["pred"] for item in prediction]
-    
-    assert len(case_id) == len(npy_msk_pred), f"len{len(case_id)} and len{len(npy_msk_pred)}"
+
+    assert len(case_id) == len(
+        npy_msk_pred
+    ), f"len{len(case_id)} and len{len(npy_msk_pred)}"
 
     [np.save(path, seg) for path, seg in zip(npy_pred_path, npy_msk_pred)]
     [item.update({"npy_seg_path": npy_pred_path[idc]}) for idc, item in enumerate(data)]
-    
+
     postprocess = Postprocess3D(configs=configs["preprocess"], data=data)
     nii_msk_pred, case_id = postprocess.create()
     [item.update({"nii_seg_path": nii_pred_path[idc]}) for idc, item in enumerate(data)]
@@ -112,20 +113,21 @@ def inference(
     logger.info(f"The number of test dataset is {len(nii_msk_pred)}")
     logger.info(f"Saved test dataset at {out_path}")
 
+
 def main():
     parser = HfArgumentParser((ModelArguments, DataInferenceArguments))
     model_args, data_infer_args = parser.parse_args_into_dataclasses()
-    
+
     inference(
-        data_path=data_infer_args.data_path, 
+        data_path=data_infer_args.data_path,
         out_path=data_infer_args.out_path,
         pred_path=data_infer_args.pred_path,
         model_name_or_path=model_args.model_name_or_path,
         config_path=model_args.config_path,
         pretrained_path=model_args.cache_dir,
-        freeze_feature=model_args.freeze_feature,  
+        freeze_feature=model_args.freeze_feature,
         num_classes=model_args.num_classes,
-        act_func=model_args.act_func
+        act_func=model_args.act_func,
     )
 
 
