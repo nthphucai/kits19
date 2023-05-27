@@ -1,11 +1,13 @@
 import os
-import numpy as np
+
 import nibabel as nib
+import numpy as np
 import SimpleITK as sitk
 
-from segment.data.preprocess.base_preprocess import BasePreprocess3D
 from segment.data.augs import aug_maps
+from segment.data.preprocess.base_preprocess import BasePreprocess3D
 from segment.utils.utils import get_progress
+
 
 class Postprocess3D(BasePreprocess3D):
     def __init__(self, configs: dict, data: dict): 

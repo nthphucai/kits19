@@ -1,10 +1,13 @@
 import os
-import wandb
+
 import numpy as np
 import torch
 import torch.optim as opts
 
+import wandb
+
 from .base_class import TrainerCallback
+
 
 class LrFinder(TrainerCallback):
     def __init__(self, min_lr=1e-5, max_lr=1, epochs=1, use_plotly=False):
@@ -49,7 +52,7 @@ class LrFinder(TrainerCallback):
     def on_train_end(self):
         # self.plot_data()
         lrs, targets = zip(*self.get_data(group=0, target="Loss"))
-        logs = ({"learning_rate": lrs, "loss": lrs})
+        logs = {"learning_rate": lrs, "loss": lrs}
         wandb.log({**logs})
 
     def get_data(self, group=0, target="Loss"):

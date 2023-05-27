@@ -2,6 +2,7 @@ import wandb
 
 from .base_class import TrainerCallback
 
+
 class WandbCallback(TrainerCallback):
     def __init__(self):
         self._wandb = wandb

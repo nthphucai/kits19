@@ -6,6 +6,7 @@ import torch
 import torch.multiprocessing as mp
 from tqdm.auto import tqdm
 
+
 def get_progress(iterable=None, total=None, desc=None, disable=False):
     """
     get progress bar
@@ -15,6 +16,7 @@ def get_progress(iterable=None, total=None, desc=None, disable=False):
     :return: progress bar
     """
     return tqdm(iterable=iterable, total=total, desc=desc, disable=disable)
+
 
 def multiprocess(
     iter_func,
@@ -72,6 +74,7 @@ def multiprocess(
 
     if not all([r is None for r in final_results]):
         return final_results
+
 
 def set_gpu(*gpu_ids):
     """

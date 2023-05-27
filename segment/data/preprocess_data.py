@@ -6,10 +6,10 @@ from typing import Optional
 import pandas as pd
 
 from segment.data import create_df
+from segment.data.preprocess.standard_preprocess import Preprocess3D
 from segment.data.utils import split_data
 from segment.utils.file_utils import logger, read_yaml_file, write_json_file
 from segment.utils.hf_argparser import HfArgumentParser
-from segment.data.preprocess.standard_preprocess import Preprocess3D
 
 
 @dataclass
