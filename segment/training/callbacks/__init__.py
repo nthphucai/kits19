@@ -12,5 +12,5 @@ callback_maps = {
     "super_convergence": SuperConvergence,
     "lr_finder": LrFinder,
     "warm_restart": WarmRestart,
-    "report_to_wandb": WandbCallback
+    "report_to_wandb": WandbCallback,
 }

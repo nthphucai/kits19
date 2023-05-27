@@ -62,12 +62,6 @@ class TrainerCallback:
         """
         pass
 
-    def on_log(self, logs):
-        """
-        Event called after logging the last logs.
-        """
-        pass
-
     def set_trainer(self, trainer: BaseTrainer):
         # self.models = [
         #     m.module if isinstance(m, nn.DataParallel) else m for m in trainer.model
@@ -75,6 +69,10 @@ class TrainerCallback:
         self.models = [trainer.model]
         self.optimizers = [trainer.optimizer]
         self.trainer = trainer
+
+        # self.models = [m.module if isinstance(m, nn.DataParallel) else m for m in trainer.models]
+        # self.optimizers = trainer.optimizers
+        # self.trainer = trainer
 
     def extra_repr(self):
         return ""

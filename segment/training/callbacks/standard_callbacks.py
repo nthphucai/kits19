@@ -14,7 +14,7 @@ from .base_class import TrainerCallback
 
 class ReduceLROnPlateau(TrainerCallback):
     def __init__(
-        self, monitor="val loss", patience=5, mode="min", factor=0.1, verbose=1
+        self, monitor="eval_loss", patience=5, mode="min", factor=0.1, verbose=1
     ):
         super().__init__()
 
@@ -48,7 +48,7 @@ class ReduceLROnPlateau(TrainerCallback):
 
 
 class EarlyStopping(TrainerCallback):
-    def __init__(self, monitor="val loss", patience=10, mode="min", verbose=1):
+    def __init__(self, monitor="eval_loss", patience=10, mode="min", verbose=1):
         super().__init__()
 
         self.monitor = monitor
@@ -90,7 +90,7 @@ class ModelCheckpoint(TrainerCallback):
     def __init__(
         self,
         file_path,
-        monitor="val loss",
+        monitor="eval_loss",
         mode="min",
         save_best_only=True,
         overwrite=True,
@@ -142,7 +142,7 @@ class ModelCheckpoint(TrainerCallback):
         )
 
 
-class CSVLogger(≈):
+class CSVLogger(TrainerCallback):
     """Callback that streams epoch results to a csv file.
 
     Supports all values that can be represented as a string,

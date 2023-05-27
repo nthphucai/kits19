@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
 
 import torch
 import torch.nn as nn
@@ -53,11 +52,13 @@ class BaseTrainer(ABC):
                 loss, preds = self._train_one_batch(step, imgs, targets)
                 total_loss += loss.item()
                 self._update_one_batch(preds, targets)
-                
+
                 pbar.update()
                 [
-                  c.on_training_batch_end(epoch=epoch, step=step, data=data, logs=total_loss) 
-                  for c in callbacks
+                    c.on_training_batch_end(
+                        epoch=epoch, step=step, data=data, logs={"Loss": total_loss}
+                    )
+                    for c in callbacks
                 ]
 
         train_loss = total_loss / len(self.dl_train)
@@ -71,27 +72,30 @@ class BaseTrainer(ABC):
         with torch.no_grad():
             with get_progress(total=len(self.dl_val)) as pbar:
                 for step, batch_data in enumerate(self.dl_val):
-                  data = self._extract_loader(batch_data)
-                  imgs, targets = data                    
-                  [
-                      c.on_validation_batch_begin(epoch, step=step, data=data)
-                      for c in callbacks
-                  ]
-                  loss, preds = self._eval_one_batch(imgs, targets)
-                  total_loss += loss.item()
-                  self._update_one_batch(preds, targets)
+                    data = self._extract_loader(batch_data)
+                    imgs, targets = data
+                    [
+                        c.on_validation_batch_begin(epoch, step=step, data=data)
+                        for c in callbacks
+                    ]
+                    loss, preds = self._eval_one_batch(imgs, targets)
+                    total_loss += loss.item()
+                    self._update_one_batch(preds, targets)
 
-                  pbar.update()
-                  [
-                    c.on_validation_batch_end(epoch=epoch, step=step, data=data, logs=total_loss) 
-                    for c in callbacks
-                  ]
+                    pbar.update()
+                    [
+                        c.on_validation_batch_end(
+                            epoch=epoch, step=step, data=data, logs=total_loss
+                        )
+                        for c in callbacks
+                    ]
 
         val_loss = total_loss / len(self.dl_val)
         dsc_batch, dsc_organ, dsc_tumor = self._measures_one_epoch()
         return val_loss, dsc_batch, dsc_organ, dsc_tumor
 
-    def _extract_loader(self, batch_data):
+    @staticmethod
+    def _extract_loader(batch_data):
         imgs, targets = batch_data
         return imgs, targets
 
