@@ -6,7 +6,7 @@ segment_kits:
     num_classes: 3
     act_func: softmax
   criterion:
-    class_weight: /content/drive/MyDrive/Seg3D/KiTS2019/kits19/output/class_weight.npy
+    class_weight: output/class_weight.npy
     name: dice_bce
     smooth: 1.e-6
     label_smoothing: 0.01 
@@ -19,7 +19,7 @@ segment_kits:
   scheduler: 
     name: reduce_plateu
   verbose: True
-  callbacks: [{"name": "checkpoint", "file_path": "output/file_path.pt"}]
+  callbacks: [{"name": "report_to_wandb"}, {"name": "lr_finder", "use_plotly": False}]
   save_path:
     save_log_path: log_UnetRes3D_softmax
     save_model_path: best_UnetRes3D_softmax

@@ -4,7 +4,6 @@ from typing import Optional
 
 import pandas as pd
 import torch
-from sklearn.model_selection import train_test_split
 
 from segment.data.augs import aug_maps
 from segment.data.data_readers.data_reader import DatasetReader
@@ -38,13 +37,16 @@ class DataTrainingArguments:
         default="test_dataset.pt", metadata={"help": "Name for test dataset"}
     )
 
-    fold: Optional[int] = field(default=None, metadata={"help": "Fold number"})
+    fold: Optional[int] = field(
+        default=None,
+        metadata={"help": "Fold number"}
+    )
 
 
 def get_dataset(
     data_path: str,
     config_path: str,
-    fold: int = 1,
+    fold: Optional[int] = 1,
     out_path: str = None,
     train_file_name: str = "train_dataset.pt",
     valid_file_name: str = "valid_dataset.pt",
@@ -60,7 +62,9 @@ def get_dataset(
         train_df = df.loc[df["fold"] != fold].reset_index(drop=True)
         valid_df = df.loc[df["fold"] == fold].reset_index(drop=True)
     else:
-        train_df, valid_df = train_test_split(df, test_size=0.2)
+        train_df = df.reset_index(drop=True)
+        # Default fold=0 for valid data
+        valid_df = df.loc[df["fold"] == 0].reset_index(drop=True)
 
     train_ds = DatasetReader(
         df=train_df, augs=aug_maps["transforms"], phase="train", **config

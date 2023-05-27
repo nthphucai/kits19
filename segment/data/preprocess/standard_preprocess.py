@@ -8,9 +8,10 @@ import pandas as pd
 from sklearn.model_selection import KFold
 
 from ...utils.utils import multiprocess
-from ..augs import aug_maps 
-from .base_preprocess import BasePreprocess3D
+from ..augs import aug_maps
 from ..data_readers.data_reader import DatasetReader
+from .base_preprocess import BasePreprocess3D
+
 
 class Preprocess3D(BasePreprocess3D):
     def __init__(
