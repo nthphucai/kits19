@@ -1,33 +1,38 @@
+import logging
 import os
 from dataclasses import dataclass, field
 from typing import Optional
 
-import torch
 import numpy as np
+import torch
 
+import wandb
 from segment.models import model_maps
 from segment.models.segment import get_model
-from segment.utils.file_utils import logger, read_yaml_file
 from segment.training.trainer.config_trainer import ConfigTrainer
+from segment.utils.file_utils import logger, read_yaml_file
 from segment.utils.hf_argparser import HfArgumentParser
 
 
 @dataclass
 class ModelArguments:
-
     model_name_or_path: Optional[str] = field(
         default=None,
         metadata={"help": "Path for pretrained model or model"},
     )
 
+    model_type: str = field(
+        default="Unet", metadata={"help": "Specify the type of model"}
+    )
+
     cache_dir: Optional[str] = field(
         default=None,
-        metadata={"help": "Where do you want to load the pretrained models"},
+        metadata={"help": "Path to load the pretrained models"},
     )
 
     output_dir: Optional[str] = field(
         default=None,
-        metadata={"help": "Where do you want to store the pretrained models"},
+        metadata={"help": "Path to store the pretrained models"},
     )
 
     config_dir: Optional[str] = field(
@@ -41,18 +46,20 @@ class ModelArguments:
     )
 
     act_func: Optional[str] = field(
-        default="softmax", metadata={"help": "activate function type"}
+        default="softmax", metadata={"help": "The activate function type"}
     )
 
 
 @dataclass
 class DataTrainingArguments:
     train_dataset_path: Optional[str] = field(
-        default="output/data/train_dataset.pt", metadata={"help": "Path to train dataset"}
+        default="output/data/train_dataset.pt",
+        metadata={"help": "Path for train dataset directory"},
     )
 
     valid_dataset_path: Optional[str] = field(
-        default="output/data/valid_dataset.pt", metadata={"help": "Path to valid dataset"}
+        default="output/data/valid_dataset.pt",
+        metadata={"help": "Path to valid dataset directory"},
     )
 
     class_weight_path: Optional[str] = field(
@@ -70,17 +77,17 @@ class TrainingArguments:
 
     log_dir: Optional[str] = field(
         default=None,
-        metadata={"help": "Whether to save log"},
+        metadata={"help": "Path for log file directory"},
     )
 
     do_train: Optional[bool] = field(
         default=True,
-        metadata={"help": "Whether to train model"},
+        metadata={"help": "Whether to run training"},
     )
 
     do_eval: Optional[bool] = field(
         default=False,
-        metadata={"help": "Whether to eval model"},
+        metadata={"help": "Whether to run eval on the dev set."},
     )
 
     per_device_train_batch_size: int = field(
@@ -88,6 +95,13 @@ class TrainingArguments:
     )
     per_device_eval_batch_size: int = field(
         default=2, metadata={"help": "Batch size per GPU/TPU core/CPU for evaluation."}
+    )
+
+    report_to: Optional[str] = field(
+        default="wandb",
+        metadata={
+            "help": "The list of integrations to report the results and logs to."
+        },
     )
 
 
@@ -108,15 +122,16 @@ def runner(
     per_device_train_batch_size: int = 2,
     per_device_eval_batch_size: int = 2,
 ):
-
     if not os.path.exists(os.path.dirname(log_dir)):
         os.makedirs(os.path.dirname(log_dir))
 
     config = read_yaml_file(config_dir)["segment_kits"]
     num_classes = config["model"]["num_classes"]
     act_func = config["model"]["act_func"]
-    
-    class_weight = np.array([0.1, 0.3, 0.6]) if num_classes == 3 else np.array([0.25, 0.75])
+
+    class_weight = (
+        np.array([0.1, 0.3, 0.6]) if num_classes == 3 else np.array([0.25, 0.75])
+    )
     class_weight = class_weight.reshape(1, num_classes, *[1] * 3)
     np.save(class_weight_path, class_weight)
 
@@ -129,8 +144,10 @@ def runner(
     )
 
     train_dataset = torch.load(train_dataset_path)
-    valid_dataset = torch.load(valid_dataset_path) if valid_dataset_path is not None else None
-    
+    valid_dataset = (
+        torch.load(valid_dataset_path) if valid_dataset_path is not None else None
+    )
+
     logger.info("The number of train samples: %s", len(train_dataset))
     logger.info("The number of eval samples: %s", len(valid_dataset))
 
@@ -162,6 +179,30 @@ def main():
     )
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
+    # Setup logging
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
+        datefmt="%m/%d/%Y %H:%M:%S",
+        level=logging.INFO,
+    )
+
+    logging.warning(
+        "Device: %s, n_gpu: %s",
+        torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
+        torch.cuda.device_count(),
+    )
+    # Setup wandb
+    if training_args.report_to is not None:
+        if training_args.report_to == "wandb":
+            wandb.login()
+            wandb.init(
+                project="kidney-segment",
+                name=model_args.model_name_or_path,
+                group=model_args.model_type,
+                tags=["baseline", "unet"],
+                job_type="train",
+            )
+
     assert isinstance(model_args, object)
     runner(
         train_dataset_path=data_args.train_dataset_path,
@@ -172,7 +213,6 @@ def main():
         out_dir=model_args.output_dir,
         cache_dir=model_args.cache_dir,
         freeze_feature=model_args.freeze_feature,
-        act_func=model_args.act_func,
         num_train_epochs=training_args.num_train_epochs,
         log_dir=training_args.log_dir,
         do_train=training_args.do_train,
@@ -184,4 +224,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
